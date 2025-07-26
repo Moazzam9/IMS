@@ -146,32 +146,54 @@ ipcMain.on('load-data', async (event, data) => {
 
 // Handle print-to-pdf event
 ipcMain.on('print-to-pdf', async (event, options) => {
+  console.log('Received print-to-pdf event with options:', options);
   try {
     const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) {
+      console.error('No BrowserWindow found for the sender');
+      event.reply('app-error', { message: 'No window found for printing' });
+      return;
+    }
+    
     const defaultPath = path.join(app.getPath('documents'), `${options.filename || 'document'}.pdf`);
+    console.log('Default save path:', defaultPath);
     
     // Ask user where to save the PDF
-    const { filePath } = await dialog.showSaveDialog({
+    console.log('Showing save dialog...');
+    const saveDialogResult = await dialog.showSaveDialog({
       title: 'Save PDF',
       defaultPath,
       filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
     });
+    console.log('Save dialog result:', saveDialogResult);
     
-    if (!filePath) {
+    const { filePath, canceled } = saveDialogResult;
+    
+    if (canceled || !filePath) {
+      console.log('PDF save cancelled by user');
       event.reply('app-error', { message: 'PDF save cancelled' });
       return;
     }
     
-    const data = await win.webContents.printToPDF({
+    console.log('Printing to PDF with options:', options.printOptions);
+    const printOptions = {
       printBackground: true,
       landscape: false,
       ...options.printOptions
-    });
+    };
+    console.log('Final print options:', printOptions);
+    
+    const data = await win.webContents.printToPDF(printOptions);
+    console.log('PDF data generated, size:', data.length);
     
     fs.writeFileSync(filePath, data);
+    console.log('PDF file written to:', filePath);
+    
     event.reply('pdf-saved', { success: true, path: filePath });
+    console.log('pdf-saved event sent to renderer');
     
     // Ask if user wants to open the PDF
+    console.log('Showing message box for opening PDF...');
     const { response } = await dialog.showMessageBox({
       type: 'question',
       buttons: ['Open', 'Cancel'],
@@ -179,8 +201,10 @@ ipcMain.on('print-to-pdf', async (event, options) => {
       title: 'PDF Saved',
       message: 'PDF has been saved successfully. Do you want to open it?'
     });
+    console.log('Message box response:', response);
     
     if (response === 0) {
+      console.log('Opening PDF file...');
       shell.openPath(filePath);
     }
   } catch (error) {

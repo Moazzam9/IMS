@@ -5,6 +5,7 @@ import Button from '../../components/Common/Button';
 import Table from '../../components/Common/Table';
 import { BarChart3, FileText, DollarSign, Calendar, Download, Printer } from 'lucide-react';
 import { Purchase, Sale, Product } from '../../types';
+import { generateCompanyInfoHTML } from '../../utils/printUtils';
 
 type ReportType = 'purchase' | 'stock' | 'profit';
 type DateRange = 'today' | 'week' | 'month' | 'custom';
@@ -351,6 +352,9 @@ const ReportsPage: React.FC = () => {
     } else if (reportType === 'profit') {
       reportTitle = 'Profit Report';
     }
+    
+    // Get company information HTML
+    const companyInfoHTML = generateCompanyInfoHTML();
 
     // Generate table HTML
     let tableHTML = '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">';
@@ -462,6 +466,7 @@ const ReportsPage: React.FC = () => {
             Print Report
           </button>
         </div>
+        ${companyInfoHTML}
         <h1>${reportTitle}</h1>
         <p class="date">Period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}</p>
         ${summaryHTML}

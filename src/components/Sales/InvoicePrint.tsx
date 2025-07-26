@@ -4,20 +4,12 @@ import { Sale, SaleItem, Customer, Product } from '../../types';
 import Button from '../Common/Button';
 import { Printer } from 'lucide-react';
 import { isElectron, printToPDF } from '../../services/electronBridge';
+import { getCompanyInfo, getPrintSettings } from '../../utils/printUtils';
 
 interface InvoicePrintProps {
   sale: Sale;
   customer: Customer | undefined;
   products: Product[];
-  companyInfo?: {
-    name: string;
-    address: string;
-    phone: string;
-    email: string;
-    website: string;
-    taxId: string;
-    logo: string | null;
-  };
   onClose: () => void;
 }
 
@@ -25,34 +17,12 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
   sale,
   customer,
   products,
-  companyInfo = {
-    name: 'My Inventory System',
-    address: '123 Business Street, City',
-    phone: '+1 234 567 890',
-    email: 'contact@myinventory.com',
-    website: 'www.myinventory.com',
-    taxId: 'TAX-12345-ID',
-    logo: null
-  },
   onClose
 }) => {
   const invoiceRef = useRef<HTMLDivElement>(null);
-
-  // Get print settings from localStorage or use defaults
-  const getPrintSettings = () => {
-    const savedSettings = localStorage.getItem('printSettings');
-    if (savedSettings) {
-      return JSON.parse(savedSettings);
-    }
-    return {
-      showLogo: true,
-      showTaxId: true,
-      showSignature: true,
-      footerText: 'Thank you for your business!',
-      paperSize: 'a4'
-    };
-  };
-
+  
+  // Get company information and print settings from utility functions
+  const companyInfo = getCompanyInfo();
   const printSettings = getPrintSettings();
 
   // Use useReactToPrint hook for browser printing
@@ -64,8 +34,12 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
 
   // Handle print function
   const handlePrint = useCallback(() => {
+    console.log('Print function called');
+    console.log('Is Electron:', isElectron());
+    
     if (isElectron()) {
       // Use Electron's PDF printing
+      console.log('Using Electron PDF printing');
       printToPDF(`Invoice-${sale.invoiceNumber}`, {
         landscape: false,
         printBackground: true,
@@ -76,11 +50,13 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
         })
         .catch((error) => {
           console.error('Failed to save PDF', error);
+          console.log('Falling back to browser printing');
           // Fallback to browser printing
           if (reactToPrint) reactToPrint();
         });
     } else {
       // Use browser printing
+      console.log('Using browser printing');
       if (reactToPrint) reactToPrint();
     }
   }, [reactToPrint, sale.invoiceNumber]);
@@ -167,7 +143,7 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                         <div className="text-sm text-gray-600">{product?.code || ''}</div>
                       </td>
                       <td className="py-2 px-4 text-right">{item.quantity} {product?.unit || ''}</td>
-                      <td className="py-2 px-4 text-right">${item.price.toFixed(2)}</td>
+                      <td className="py-2 px-4 text-right">${item.salePrice.toFixed(2)}</td>
                       <td className="py-2 px-4 text-right">${(item.discount || 0).toFixed(2)}</td>
                       <td className="py-2 px-4 text-right">${item.total.toFixed(2)}</td>
                     </tr>
