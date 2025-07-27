@@ -86,7 +86,7 @@ const SuppliersList: React.FC = () => {
       label: 'Balance',
       render: (value: number) => (
         <span className={value > 0 ? 'text-red-600' : value < 0 ? 'text-green-600' : 'text-gray-900'}>
-          ${Math.abs(value).toFixed(2)} {value > 0 ? '(Dr)' : value < 0 ? '(Cr)' : ''}
+          ₨{Math.abs(value).toFixed(2)} {value > 0 ? '(Dr)' : value < 0 ? '(Cr)' : ''}
         </span>
       )
     },

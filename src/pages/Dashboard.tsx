@@ -46,7 +46,7 @@ const Dashboard: React.FC = () => {
     },
     {
       title: 'Total Revenue',
-      value: `$${sales.reduce((sum, sale) => sum + sale.netAmount, 0).toLocaleString()}`,
+      value: `₨${sales.reduce((sum, sale) => sum + sale.netAmount, 0).toLocaleString()}`,
       icon: DollarSign,
       color: 'text-indigo-600',
       bgColor: 'bg-indigo-100'
@@ -131,7 +131,7 @@ const Dashboard: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <p className="font-medium text-green-600">
-                          ${sale.netAmount.toLocaleString()}
+                          ₨{sale.netAmount.toLocaleString()}
                         </p>
                         <p className="text-xs text-gray-500">
                           {sale.totalItems} items

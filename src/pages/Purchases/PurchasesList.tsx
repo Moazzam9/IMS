@@ -185,17 +185,17 @@ const PurchasesList: React.FC = () => {
     { 
       key: 'totalAmount', 
       label: 'Total Amount',
-      render: (value: number) => `$${value.toFixed(2)}`
+      render: (value: number) => `₨${value.toFixed(2)}`
     },
     { 
       key: 'discount', 
       label: 'Discount',
-      render: (value: number) => value ? `$${value.toFixed(2)}` : '$0.00'
+      render: (value: number) => value ? `₨${value.toFixed(2)}` : '₨0.00'
     },
     { 
       key: 'netAmount', 
       label: 'Net Amount',
-      render: (value: number) => `$${value.toFixed(2)}`
+      render: (value: number) => `₨${value.toFixed(2)}`
     },
     { key: 'totalItems', label: 'Items' },
     { 
@@ -441,15 +441,15 @@ const PurchasesList: React.FC = () => {
                   <div className="space-y-1">
                     <div className="flex justify-between">
                       <span>Total Amount:</span>
-                      <span className="font-medium">${purchaseItems.reduce((sum, item) => sum + item.total, 0).toFixed(2)}</span>
+                      <span className="font-medium">₨{purchaseItems.reduce((sum, item) => sum + item.total, 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Discount:</span>
-                      <span className="font-medium">${formData.discount.toFixed(2)}</span>
+                      <span className="font-medium">₨{formData.discount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between border-t border-blue-200 pt-1">
                       <span>Net Amount:</span>
-                      <span className="font-medium">${(purchaseItems.reduce((sum, item) => sum + item.total, 0) - formData.discount).toFixed(2)}</span>
+                      <span className="font-medium">₨{(purchaseItems.reduce((sum, item) => sum + item.total, 0) - formData.discount).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

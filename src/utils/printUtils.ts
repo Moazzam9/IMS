@@ -7,15 +7,17 @@ interface CompanyInfo {
   name: string;
   address: string;
   phone: string;
+  cell: string;
   email: string;
   website: string;
-  taxId: string;
+  ntn: string;
+  strn: string;
   logo: string | null;
 }
 
 interface PrintSettings {
   showLogo: boolean;
-  showTaxId: boolean;
+  showTaxId: boolean; // Now controls display of NTN, STRN, Phone, and Cell
   showSignature: boolean;
   footerText: string;
   paperSize: 'a4' | 'letter' | 'thermal';
@@ -27,12 +29,14 @@ interface PrintSettings {
  */
 export const getCompanyInfo = (): CompanyInfo => {
   const defaultInfo: CompanyInfo = {
-    name: 'My Inventory System',
-    address: '123 Business Street, City',
-    phone: '+1 234 567 890',
+    name: 'Nihal Battery House & Free Oil Change',
+    address: 'GT. Road Munir Abad Wah-Cantt Rawalpindi',
+    phone: '051-4925171',
+    cell: '03055026363',
     email: 'contact@myinventory.com',
     website: 'www.myinventory.com',
-    taxId: 'TAX-12345-ID',
+    ntn: '#F067267-1',
+    strn: 'STRN-67890',
     logo: null
   };
 
@@ -74,25 +78,26 @@ export const getPrintSettings = (): PrintSettings => {
 export const generateCompanyInfoHTML = (): string => {
   const companyInfo = getCompanyInfo();
   const printSettings = getPrintSettings();
-  
+
   let html = '<div style="text-align: center; margin-bottom: 20px;">';
-  
+
   // Add logo if enabled and available
   if (printSettings.showLogo && companyInfo.logo) {
     html += `<img src="${companyInfo.logo}" alt="${companyInfo.name} Logo" style="max-height: 80px; margin-bottom: 10px;"><br>`;
   }
-  
+
   // Add company name and details
   html += `<h2 style="margin: 5px 0;">${companyInfo.name}</h2>`;
   html += `<p style="margin: 2px 0;">${companyInfo.address}</p>`;
   html += `<p style="margin: 2px 0;">Phone: ${companyInfo.phone} | Email: ${companyInfo.email}</p>`;
-  
-  // Add tax ID if enabled
+
+  // Add tax information if enabled
   if (printSettings.showTaxId) {
-    html += `<p style="margin: 2px 0;">Tax ID: ${companyInfo.taxId}</p>`;
+    html += `<p style="margin: 2px 0;">NTN: ${companyInfo.ntn} | STRN: ${companyInfo.strn}</p>`;
+    html += `<p style="margin: 2px 0;">Phone: ${companyInfo.phone} | Cell: ${companyInfo.cell}</p>`;
   }
-  
+
   html += '</div>';
-  
+
   return html;
 };

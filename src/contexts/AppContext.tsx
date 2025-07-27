@@ -237,15 +237,145 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   
   const addSale = async (sale: Omit<Sale, 'id'>) => {
-    return await FirebaseService.addSale(sale, userId);
+    // Add the sale to the database
+    const saleId = await FirebaseService.addSale(sale, userId);
+    
+    // Update product stock and create stock movements for each item
+    if (sale.status === 'completed') {
+      for (const item of sale.items) {
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
+          // Deduct the quantity from product stock
+          const newStock = Math.max(0, product.currentStock - item.quantity);
+          await updateProduct(product.id, { currentStock: newStock });
+          
+          // Create stock movement record
+          const stockMovement: Omit<StockMovement, 'id'> = {
+            productId: product.id,
+            type: 'sale',
+            quantity: item.quantity,
+            referenceId: saleId,
+            referenceType: 'sale',
+            date: sale.saleDate,
+            createdAt: new Date().toISOString()
+          };
+          
+          await addStockMovement(stockMovement);
+        }
+      }
+    }
+    
+    return saleId;
   };
   
   const updateSale = async (id: string, sale: Partial<Sale>) => {
+    // Get the original sale to compare changes
+    const originalSale = sales.find(s => s.id === id);
+    
+    // Update the sale in the database
     await FirebaseService.updateSale(id, sale, userId);
+    
+    // Handle stock updates if status is completed and items are provided
+    if (sale.status === 'completed' && sale.items && originalSale) {
+      // For each item in the updated sale
+      for (const newItem of sale.items) {
+        // Find the original item to compare quantities
+        const originalItem = originalSale.items.find(item => item.productId === newItem.productId);
+        const product = products.find(p => p.id === newItem.productId);
+        
+        if (product) {
+          let quantityDifference = 0;
+          
+          if (originalItem) {
+            // If item existed before, calculate the difference
+            quantityDifference = newItem.quantity - originalItem.quantity;
+          } else {
+            // If it's a new item, the difference is the full quantity
+            quantityDifference = newItem.quantity;
+          }
+          
+          // Only update stock if there's a change in quantity
+          if (quantityDifference !== 0) {
+            // Update product stock
+            const newStock = Math.max(0, product.currentStock - quantityDifference);
+            await updateProduct(product.id, { currentStock: newStock });
+            
+            // Create stock movement record for the difference
+            const stockMovement: Omit<StockMovement, 'id'> = {
+              productId: product.id,
+              type: quantityDifference > 0 ? 'sale' : 'return_sale',
+              quantity: Math.abs(quantityDifference),
+              referenceId: id,
+              referenceType: 'sale_update',
+              date: sale.saleDate || originalSale.saleDate,
+              createdAt: new Date().toISOString()
+            };
+            
+            await addStockMovement(stockMovement);
+          }
+        }
+      }
+      
+      // Check for items that were removed from the sale
+      for (const originalItem of originalSale.items) {
+        const stillExists = sale.items.some(item => item.productId === originalItem.productId);
+        
+        if (!stillExists) {
+          // Item was removed, return the quantity to stock
+          const product = products.find(p => p.id === originalItem.productId);
+          if (product) {
+            const newStock = product.currentStock + originalItem.quantity;
+            await updateProduct(product.id, { currentStock: newStock });
+            
+            // Create stock movement record for the returned quantity
+            const stockMovement: Omit<StockMovement, 'id'> = {
+              productId: product.id,
+              type: 'return_sale',
+              quantity: originalItem.quantity,
+              referenceId: id,
+              referenceType: 'sale_update',
+              date: sale.saleDate || originalSale.saleDate,
+              createdAt: new Date().toISOString()
+            };
+            
+            await addStockMovement(stockMovement);
+          }
+        }
+      }
+    }
   };
   
   const deleteSale = async (id: string) => {
+    // Get the sale before deleting it
+    const saleToDelete = sales.find(s => s.id === id);
+    
+    // Delete the sale from the database
     await FirebaseService.deleteSale(id, userId);
+    
+    // If the sale was completed, return the quantities to stock
+    if (saleToDelete && saleToDelete.status === 'completed') {
+      for (const item of saleToDelete.items) {
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
+          // Return the quantity to stock
+          const newStock = product.currentStock + item.quantity;
+          await updateProduct(product.id, { currentStock: newStock });
+          
+          // Create stock movement record for the returned quantity
+          const stockMovement: Omit<StockMovement, 'id'> = {
+            productId: product.id,
+            type: 'return_sale',
+            quantity: item.quantity,
+            referenceId: id,
+            referenceType: 'sale_delete',
+            date: saleToDelete.saleDate,
+            createdAt: new Date().toISOString()
+          };
+          
+          await addStockMovement(stockMovement);
+        }
+      }
+    }
   };
   
   const addStockMovement = async (stockMovement: Omit<StockMovement, 'id'>) => {

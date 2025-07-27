@@ -99,12 +99,12 @@ const ProductsList: React.FC = () => {
     { 
       key: 'tradePrice', 
       label: 'Trade Price',
-      render: (value: number) => `$${value.toFixed(2)}`
+      render: (value: number) => `₨${value.toFixed(2)}`
     },
     { 
       key: 'salePrice', 
       label: 'Sale Price',
-      render: (value: number) => `$${value.toFixed(2)}`
+      render: (value: number) => `₨${value.toFixed(2)}`
     },
     { 
       key: 'currentStock', 

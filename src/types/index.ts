@@ -76,6 +76,8 @@ export interface Sale {
   invoiceNumber: string;
   customerId?: string;
   customer?: Customer;
+  customerName?: string; // For manually entered customer name
+  salesperson?: string; // For salesperson name
   totalAmount: number;
   discount: number;
   netAmount: number;

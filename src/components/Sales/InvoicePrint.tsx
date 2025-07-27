@@ -29,35 +29,29 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
   const reactToPrint = useReactToPrint({
     content: () => invoiceRef.current,
     documentTitle: `Invoice-${sale.invoiceNumber}`,
-    onAfterPrint: () => console.log('Printed successfully')
+    onBeforeGetContent: () => {
+      console.log('Before getting content for printing');
+      return Promise.resolve();
+    },
+    onAfterPrint: () => {
+      console.log('Printed successfully');
+    },
+    onPrintError: (error) => {
+      console.error('Print error:', error);
+    }
   });
 
   // Handle print function
   const handlePrint = useCallback(() => {
     console.log('Print function called');
-    console.log('Is Electron:', isElectron());
     
-    if (isElectron()) {
-      // Use Electron's PDF printing
-      console.log('Using Electron PDF printing');
-      printToPDF(`Invoice-${sale.invoiceNumber}`, {
-        landscape: false,
-        printBackground: true,
-        pageSize: 'A4'
-      })
-        .then((result) => {
-          console.log('PDF saved successfully', result);
-        })
-        .catch((error) => {
-          console.error('Failed to save PDF', error);
-          console.log('Falling back to browser printing');
-          // Fallback to browser printing
-          if (reactToPrint) reactToPrint();
-        });
+    // Always use browser printing to ensure it works
+    console.log('Using browser printing');
+    if (reactToPrint) {
+      reactToPrint();
     } else {
-      // Use browser printing
-      console.log('Using browser printing');
-      if (reactToPrint) reactToPrint();
+      console.error('reactToPrint is not available');
+      window.print(); // Fallback to window.print() if reactToPrint is not available
     }
   }, [reactToPrint, sale.invoiceNumber]);
 
@@ -72,7 +66,15 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold">Invoice #{sale.invoiceNumber}</h2>
           <div className="flex space-x-2">
-            <Button icon={Printer} onClick={handlePrint}>Print Invoice</Button>
+            <Button 
+              icon={Printer} 
+              onClick={() => {
+                console.log('Print Invoice button clicked in InvoicePrint');
+                handlePrint();
+              }}
+            >
+              Print Invoice
+            </Button>
             <Button variant="secondary" onClick={onClose}>Close</Button>
           </div>
         </div>
@@ -91,11 +93,15 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                 )}
                 <h1 className="text-2xl font-bold text-gray-800">{companyInfo.name}</h1>
                 <p className="text-gray-600 whitespace-pre-line">{companyInfo.address}</p>
-                <p className="text-gray-600">{companyInfo.phone}</p>
                 <p className="text-gray-600">{companyInfo.email}</p>
                 <p className="text-gray-600">{companyInfo.website}</p>
                 {printSettings.showTaxId && (
-                  <p className="text-gray-600">Tax ID: {companyInfo.taxId}</p>
+                  <>
+                    <p className="text-gray-600">NTN: {companyInfo.ntn}</p>
+                    <p className="text-gray-600">STRN: {companyInfo.strn}</p>
+                    <p className="text-gray-600">PH: {companyInfo.phone}</p>
+                    <p className="text-gray-600">Cell: {companyInfo.cell}</p>
+                  </>
                 )}
               </div>
 
@@ -103,6 +109,7 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                 <h2 className="text-xl font-bold text-gray-800 mb-2">INVOICE</h2>
                 <p className="text-gray-600"><span className="font-medium">Invoice #:</span> {sale.invoiceNumber}</p>
                 <p className="text-gray-600"><span className="font-medium">Date:</span> {new Date(sale.saleDate).toLocaleDateString()}</p>
+                <p className="text-gray-600"><span className="font-medium">Time:</span> {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
                 <p className="text-gray-600"><span className="font-medium">Status:</span> {sale.status.charAt(0).toUpperCase() + sale.status.slice(1)}</p>
               </div>
             </div>
@@ -110,7 +117,7 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
             {/* Customer Information */}
             <div className="mb-8 p-4 bg-gray-50 rounded-md">
               <h2 className="text-lg font-bold text-gray-800 mb-2">Customer Information</h2>
-              <p className="text-gray-700"><span className="font-medium">Name:</span> {customer?.name || 'Walk-in Customer'}</p>
+              <p className="text-gray-700"><span className="font-medium">Name:</span> {sale.customerName || customer?.name || 'Walk-in Customer'}</p>
               {customer?.address && (
                 <p className="text-gray-700"><span className="font-medium">Address:</span> {customer.address}</p>
               )}
@@ -119,6 +126,9 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
               )}
               {customer?.email && (
                 <p className="text-gray-700"><span className="font-medium">Email:</span> {customer.email}</p>
+              )}
+              {sale.salesperson && (
+                <p className="text-gray-700"><span className="font-medium">Salesperson:</span> {sale.salesperson}</p>
               )}
             </div>
 
@@ -143,9 +153,9 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                         <div className="text-sm text-gray-600">{product?.code || ''}</div>
                       </td>
                       <td className="py-2 px-4 text-right">{item.quantity} {product?.unit || ''}</td>
-                      <td className="py-2 px-4 text-right">${item.salePrice.toFixed(2)}</td>
-                      <td className="py-2 px-4 text-right">${(item.discount || 0).toFixed(2)}</td>
-                      <td className="py-2 px-4 text-right">${item.total.toFixed(2)}</td>
+                      <td className="py-2 px-4 text-right">₨{item.salePrice.toFixed(2)}</td>
+                      <td className="py-2 px-4 text-right">₨{(item.discount || 0).toFixed(2)}</td>
+                      <td className="py-2 px-4 text-right">₨{item.total.toFixed(2)}</td>
                     </tr>
                   );
                 })}
@@ -157,42 +167,20 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
               <div className="w-64">
                 <div className="flex justify-between py-2">
                   <span className="font-medium">Subtotal:</span>
-                  <span>${sale.totalAmount.toFixed(2)}</span>
+                  <span>₨{sale.totalAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between py-2">
                   <span className="font-medium">Discount:</span>
-                  <span>${(sale.discount || 0).toFixed(2)}</span>
+                  <span>₨{(sale.discount || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between py-2 border-t border-b font-bold">
                   <span>Total:</span>
-                  <span>${(sale.netAmount || sale.totalAmount).toFixed(2)}</span>
+                  <span>₨{(sale.netAmount || sale.totalAmount).toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
-            {/* Payment Information */}
-            <div className="mb-8">
-              <h2 className="text-lg font-bold text-gray-800 mb-2">Payment Information</h2>
-              <p className="text-gray-700"><span className="font-medium">Payment Method:</span> Cash</p>
-              <p className="text-gray-700"><span className="font-medium">Payment Status:</span> {sale.status === 'completed' ? 'Paid' : 'Pending'}</p>
-            </div>
-
-            {/* Signature */}
-            {printSettings.showSignature && (
-              <div className="mb-8 flex justify-between">
-                <div className="w-1/3">
-                  <div className="border-t border-gray-400 pt-2">
-                    <p className="text-center text-gray-600">Customer Signature</p>
-                  </div>
-                </div>
-
-                <div className="w-1/3">
-                  <div className="border-t border-gray-400 pt-2">
-                    <p className="text-center text-gray-600">Authorized Signature</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Removed payment information and signatures as requested */}
 
             {/* Footer */}
             <div className="text-center text-gray-600 text-sm mt-8">

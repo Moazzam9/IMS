@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const newUserId = await FirebaseService.addUser({
               username: firebaseUser.email?.split('@')[0] || 'user',
               email: firebaseUser.email || '',
-              role: 'staff',
+              role: 'admin',
               firebaseUid: firebaseUser.uid,
             });
 

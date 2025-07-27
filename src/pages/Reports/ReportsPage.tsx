@@ -101,17 +101,17 @@ const ReportsPage: React.FC = () => {
     { 
       key: 'totalAmount', 
       label: 'Total Amount',
-      render: (value: number) => `$${value.toFixed(2)}`
+      render: (value: number) => `₨${value.toFixed(2)}`
     },
     { 
       key: 'discount', 
       label: 'Discount',
-      render: (value: number) => value ? `$${value.toFixed(2)}` : '$0.00'
+      render: (value: number) => value ? `₨${value.toFixed(2)}` : '₨0.00'
     },
     { 
       key: 'netAmount', 
       label: 'Net Amount',
-      render: (value: number) => `$${value.toFixed(2)}`
+      render: (value: number) => `₨${value.toFixed(2)}`
     },
     { 
       key: 'status', 
@@ -144,17 +144,17 @@ const ReportsPage: React.FC = () => {
     { 
       key: 'tradePrice', 
       label: 'Trade Price',
-      render: (value: number) => `$${value.toFixed(2)}`
+      render: (value: number) => `₨${value.toFixed(2)}`
     },
     { 
       key: 'salePrice', 
       label: 'Sale Price',
-      render: (value: number) => `$${value.toFixed(2)}`
+      render: (value: number) => `₨${value.toFixed(2)}`
     },
     { 
       key: 'stockValue', 
       label: 'Stock Value',
-      render: (_: any, product: Product) => `$${(product.currentStock * product.tradePrice).toFixed(2)}`
+      render: (_: any, product: Product) => `₨${(product.currentStock * product.tradePrice).toFixed(2)}`
     }
   ];
 
@@ -199,19 +199,19 @@ const ReportsPage: React.FC = () => {
     { 
       key: 'saleAmount', 
       label: 'Sale Amount',
-      render: (value: number) => `$${value.toFixed(2)}`
+      render: (value: number) => `₨${value.toFixed(2)}`
     },
     { 
       key: 'costAmount', 
       label: 'Cost Amount',
-      render: (value: number) => `$${value.toFixed(2)}`
+      render: (value: number) => `₨${value.toFixed(2)}`
     },
     { 
       key: 'profit', 
       label: 'Profit',
       render: (value: number) => (
         <span className={value >= 0 ? 'text-green-600' : 'text-red-600'}>
-          ${value.toFixed(2)}
+          ₨{value.toFixed(2)}
         </span>
       )
     },
@@ -374,9 +374,9 @@ const ReportsPage: React.FC = () => {
           <td>${supplier ? supplier.name : 'Unknown'}</td>
           <td>${new Date(purchase.purchaseDate).toLocaleDateString()}</td>
           <td>${purchase.totalItems}</td>
-          <td>$${purchase.totalAmount.toFixed(2)}</td>
-          <td>$${(purchase.discount || 0).toFixed(2)}</td>
-          <td>$${(purchase.netAmount || purchase.totalAmount).toFixed(2)}</td>
+          <td>₨${purchase.totalAmount.toFixed(2)}</td>
+            <td>₨${(purchase.discount || 0).toFixed(2)}</td>
+            <td>₨${(purchase.netAmount || purchase.totalAmount).toFixed(2)}</td>
           <td>${purchase.status.charAt(0).toUpperCase() + purchase.status.slice(1)}</td>
         </tr>`;
       });
@@ -393,9 +393,9 @@ const ReportsPage: React.FC = () => {
           <td>${product.currentStock}</td>
           <td>${product.unit}</td>
           <td>${product.minStockLevel || 'N/A'}</td>
-          <td>$${product.tradePrice.toFixed(2)}</td>
-          <td>$${product.salePrice.toFixed(2)}</td>
-          <td>$${(product.currentStock * product.tradePrice).toFixed(2)}</td>
+          <td>₨${product.tradePrice.toFixed(2)}</td>
+            <td>₨${product.salePrice.toFixed(2)}</td>
+            <td>₨${(product.currentStock * product.tradePrice).toFixed(2)}</td>
         </tr>`;
       });
     } else if (reportType === 'profit') {
@@ -409,10 +409,10 @@ const ReportsPage: React.FC = () => {
           <td>${item.name}</td>
           <td>${item.category || 'N/A'}</td>
           <td>${item.soldQuantity}</td>
-          <td>$${item.saleAmount.toFixed(2)}</td>
-          <td>$${item.costAmount.toFixed(2)}</td>
-          <td style="color: ${item.profit >= 0 ? 'green' : 'red'}">$${item.profit.toFixed(2)}</td>
-          <td style="color: ${item.profitMargin >= 0 ? 'green' : 'red'}">$${item.profitMargin.toFixed(2)}%</td>
+          <td>₨${item.saleAmount.toFixed(2)}</td>
+            <td>₨${item.costAmount.toFixed(2)}</td>
+            <td style="color: ${item.profit >= 0 ? 'green' : 'red'}">₨${item.profit.toFixed(2)}</td>
+            <td style="color: ${item.profitMargin >= 0 ? 'green' : 'red'}">${item.profitMargin.toFixed(2)}%</td>
         </tr>`;
       });
     }
@@ -424,17 +424,17 @@ const ReportsPage: React.FC = () => {
     summaryHTML += `<p><strong>Date Range:</strong> ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}</p>`;
     
     if (reportType !== 'stock') {
-      summaryHTML += `<p><strong>Total Purchases:</strong> $${totalPurchaseAmount.toFixed(2)}</p>`;
-      summaryHTML += `<p><strong>Total Sales:</strong> $${totalSalesAmount.toFixed(2)}</p>`;
+      summaryHTML += `<p><strong>Total Purchases:</strong> ₨${totalPurchaseAmount.toFixed(2)}</p>`;
+  summaryHTML += `<p><strong>Total Sales:</strong> ₨${totalSalesAmount.toFixed(2)}</p>`;
     }
     
     if (reportType === 'stock') {
       summaryHTML += `<p><strong>Total Products:</strong> ${filteredProducts.length}</p>`;
-      summaryHTML += `<p><strong>Total Stock Value:</strong> $${filteredProducts.reduce((sum, product) => sum + (product.currentStock * product.tradePrice), 0).toFixed(2)}</p>`;
+      summaryHTML += `<p><strong>Total Stock Value:</strong> ₨${filteredProducts.reduce((sum, product) => sum + (product.currentStock * product.tradePrice), 0).toFixed(2)}</p>`;
     }
     
     if (reportType === 'profit') {
-      summaryHTML += `<p><strong>Net Profit:</strong> <span style="color: ${profit >= 0 ? 'green' : 'red'}">$${profit.toFixed(2)}</span></p>`;
+      summaryHTML += `<p><strong>Net Profit:</strong> <span style="color: ${profit >= 0 ? 'green' : 'red'}">₨${profit.toFixed(2)}</span></p>`;
     }
     
     summaryHTML += '</div>';
@@ -642,12 +642,12 @@ const ReportsPage: React.FC = () => {
                   <>
                     <div className="bg-white p-3 rounded-lg shadow-sm">
                       <p className="text-sm text-gray-500">Total Purchases</p>
-                      <p className="font-medium">${totalPurchaseAmount.toFixed(2)}</p>
-                    </div>
-                    
-                    <div className="bg-white p-3 rounded-lg shadow-sm">
-                      <p className="text-sm text-gray-500">Total Sales</p>
-                      <p className="font-medium">${totalSalesAmount.toFixed(2)}</p>
+                      <p className="font-medium">₨{totalPurchaseAmount.toFixed(2)}</p>
+                </div>
+                
+                <div className="bg-white p-3 rounded-lg shadow-sm">
+                  <p className="text-sm text-gray-500">Total Sales</p>
+                  <p className="font-medium">₨{totalSalesAmount.toFixed(2)}</p>
                     </div>
                   </>
                 )}
@@ -662,7 +662,7 @@ const ReportsPage: React.FC = () => {
                     <div className="bg-white p-3 rounded-lg shadow-sm">
                       <p className="text-sm text-gray-500">Total Stock Value</p>
                       <p className="font-medium">
-                        ${filteredProducts.reduce((sum, product) => sum + (product.currentStock * product.tradePrice), 0).toFixed(2)}
+                        ₨{filteredProducts.reduce((sum, product) => sum + (product.currentStock * product.tradePrice), 0).toFixed(2)}
                       </p>
                     </div>
                   </>
@@ -672,7 +672,7 @@ const ReportsPage: React.FC = () => {
                   <div className="bg-white p-3 rounded-lg shadow-sm">
                     <p className="text-sm text-gray-500">Net Profit</p>
                     <p className={`font-medium ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ${profit.toFixed(2)}
+                      ₨{profit.toFixed(2)}
                     </p>
                   </div>
                 )}

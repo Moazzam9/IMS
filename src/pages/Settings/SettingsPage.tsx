@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from '../../components/Common/Card';
 import Button from '../../components/Common/Button';
 import { Settings, Store, Printer, Database, User, Shield } from 'lucide-react';
@@ -7,15 +7,17 @@ interface CompanyInfo {
   name: string;
   address: string;
   phone: string;
+  cell: string;
   email: string;
   website: string;
-  taxId: string;
+  ntn: string;
+  strn: string;
   logo: string | null;
 }
 
 interface PrintSettings {
   showLogo: boolean;
-  showTaxId: boolean;
+  showTaxId: boolean; // Now controls display of NTN, STRN, Phone, and Cell
   showSignature: boolean;
   footerText: string;
   paperSize: 'a4' | 'letter' | 'thermal';
@@ -27,11 +29,30 @@ const SettingsPage: React.FC = () => {
     name: 'My Inventory System',
     address: '123 Business Street, City',
     phone: '+1 234 567 890',
+    cell: '+1 987 654 321',
     email: 'contact@myinventory.com',
     website: 'www.myinventory.com',
-    taxId: 'TAX-12345-ID',
+    ntn: 'NTN-12345',
+    strn: 'STRN-67890',
     logo: null
   });
+  
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    try {
+      const storedCompanyInfo = localStorage.getItem('companyInfo');
+      if (storedCompanyInfo) {
+        setCompanyInfo(JSON.parse(storedCompanyInfo));
+      }
+      
+      const storedPrintSettings = localStorage.getItem('printSettings');
+      if (storedPrintSettings) {
+        setPrintSettings(JSON.parse(storedPrintSettings));
+      }
+    } catch (error) {
+      console.error('Error loading settings from localStorage:', error);
+    }
+  }, []);
   
   const [printSettings, setPrintSettings] = useState<PrintSettings>({
     showLogo: true,
@@ -226,12 +247,40 @@ const SettingsPage: React.FC = () => {
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Tax ID / VAT Number
+                        Cell
                       </label>
                       <input
                         type="text"
-                        name="taxId"
-                        value={companyInfo.taxId}
+                        name="cell"
+                        value={companyInfo.cell}
+                        onChange={handleCompanyInfoChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        NTN Number
+                      </label>
+                      <input
+                        type="text"
+                        name="ntn"
+                        value={companyInfo.ntn}
+                        onChange={handleCompanyInfoChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        STRN Number
+                      </label>
+                      <input
+                        type="text"
+                        name="strn"
+                        value={companyInfo.strn}
                         onChange={handleCompanyInfoChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
@@ -350,7 +399,7 @@ const SettingsPage: React.FC = () => {
                         onChange={handlePrintSettingsChange}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Show Tax ID / VAT Number</span>
+                      <span className="ml-2 text-sm text-gray-700">Show NTN, STRN, Phone and Cell</span>
                     </div>
                     
                     <div className="flex items-center">

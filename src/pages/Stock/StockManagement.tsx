@@ -185,11 +185,11 @@ const StockManagement: React.FC = () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Trade Price</p>
-                      <p className="font-medium">${product.tradePrice.toFixed(2)}</p>
+              <p className="font-medium">₨{product.tradePrice.toFixed(2)}</p>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Sale Price</p>
-                      <p className="font-medium">${product.salePrice.toFixed(2)}</p>
+              <p className="font-medium">₨{product.salePrice.toFixed(2)}</p>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Profit Margin</p>
@@ -199,7 +199,7 @@ const StockManagement: React.FC = () => {
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-sm text-gray-500">Stock Value</p>
-                      <p className="font-medium">${(product.currentStock * product.tradePrice).toFixed(2)}</p>
+              <p className="font-medium">₨{(product.currentStock * product.tradePrice).toFixed(2)}</p>
                     </div>
                   </div>
                 </div>
