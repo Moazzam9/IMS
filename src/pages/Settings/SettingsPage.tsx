@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Card from '../../components/Common/Card';
 import Button from '../../components/Common/Button';
 import { Settings, Store, Printer, Database, User, Shield } from 'lucide-react';
+import { FirebaseService } from '../../services/firebase';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface CompanyInfo {
   name: string;
@@ -24,6 +26,7 @@ interface PrintSettings {
 }
 
 const SettingsPage: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('company');
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
     name: 'My Inventory System',
@@ -37,22 +40,30 @@ const SettingsPage: React.FC = () => {
     logo: null
   });
   
-  // Load settings from localStorage on component mount
+  // Load settings from Firebase on component mount
   useEffect(() => {
-    try {
-      const storedCompanyInfo = localStorage.getItem('companyInfo');
-      if (storedCompanyInfo) {
-        setCompanyInfo(JSON.parse(storedCompanyInfo));
-      }
+    const loadSettings = async () => {
+      if (!user) return;
       
-      const storedPrintSettings = localStorage.getItem('printSettings');
-      if (storedPrintSettings) {
-        setPrintSettings(JSON.parse(storedPrintSettings));
+      try {
+        // Load company info
+        const storedCompanyInfo = await FirebaseService.getSettings('companyInfo', user.id);
+        if (storedCompanyInfo) {
+          setCompanyInfo(storedCompanyInfo);
+        }
+        
+        // Load print settings
+        const storedPrintSettings = await FirebaseService.getSettings('printSettings', user.id);
+        if (storedPrintSettings) {
+          setPrintSettings(storedPrintSettings);
+        }
+      } catch (error) {
+        console.error('Error loading settings from Firebase:', error);
       }
-    } catch (error) {
-      console.error('Error loading settings from localStorage:', error);
-    }
-  }, []);
+    };
+    
+    loadSettings();
+  }, [user]);
   
   const [printSettings, setPrintSettings] = useState<PrintSettings>({
     showLogo: true,
@@ -98,19 +109,29 @@ const SettingsPage: React.FC = () => {
     }
   };
   
-  // Save settings
-  const saveSettings = () => {
+  // Save settings to Firebase
+  const saveSettings = async () => {
+    if (!user) {
+      alert('You must be logged in to save settings');
+      return;
+    }
+    
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      // Save to localStorage for demo purposes
-      localStorage.setItem('companyInfo', JSON.stringify(companyInfo));
-      localStorage.setItem('printSettings', JSON.stringify(printSettings));
+    try {
+      // Save company info to Firebase
+      await FirebaseService.saveSettings('companyInfo', companyInfo, user.id);
+      
+      // Save print settings to Firebase
+      await FirebaseService.saveSettings('printSettings', printSettings, user.id);
       
       setIsSubmitting(false);
-      alert('Settings saved successfully!');
-    }, 1000);
+      alert('Settings saved successfully to your account!');
+    } catch (error) {
+      console.error('Error saving settings to Firebase:', error);
+      setIsSubmitting(false);
+      alert('Error saving settings. Please try again.');
+    }
   };
   
   return (

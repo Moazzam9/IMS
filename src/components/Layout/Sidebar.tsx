@@ -31,9 +31,9 @@ const Sidebar: React.FC = () => {
 
   return (
     <div className="w-64 bg-white shadow-lg h-full flex flex-col">
-      <div className="p-6 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-800">Inventory Pro</h1>
-        <p className="text-sm text-gray-600">Management System</p>
+      <div className="p-6 border-b border-gray-200 bg-nihal-blue text-white">
+        <h1 className="text-xl font-bold">Nihal Battery House</h1>
+        <p className="text-sm text-nihal-yellow">& Free Oil Change</p>
       </div>
       
       <nav className="flex-1 p-4">
@@ -45,8 +45,8 @@ const Sidebar: React.FC = () => {
                 className={({ isActive }) =>
                   `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'
+                      ? 'bg-nihal-light-blue text-nihal-blue border-r-2 border-nihal-yellow'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-nihal-blue'
                   }`
                 }
               >

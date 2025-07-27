@@ -1,5 +1,5 @@
 {
-  "name": "inventory-management-system",
+  "name": "nihal-battery-house",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -17,8 +17,8 @@
     "build-win": "build-installer.bat"
   },
   "build": {
-    "appId": "com.inventory.management",
-    "productName": "Inventory Management System",
+    "appId": "com.nihalbatteryhouse",
+    "productName": "Nihal Battery House & Free Oil Change",
     "files": [
       "dist/**/*",
       "electron.cjs",
@@ -38,7 +38,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Inventory Management System"
+      "shortcutName": "Nihal Battery House & Free Oil Change"
     },
     "forceCodeSigning": false,
     "publish": null

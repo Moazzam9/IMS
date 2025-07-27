@@ -25,10 +25,10 @@ const Button: React.FC<ButtonProps> = ({
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
   
   const variantClasses = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 disabled:bg-blue-300',
-    secondary: 'bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-gray-500 disabled:bg-gray-100',
+    primary: 'bg-nihal-blue text-white hover:bg-opacity-90 focus:ring-nihal-yellow disabled:bg-opacity-70',
+    secondary: 'bg-nihal-silver text-nihal-blue hover:bg-opacity-90 focus:ring-nihal-blue disabled:bg-opacity-70',
     success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 disabled:bg-green-300',
-    warning: 'bg-amber-600 text-white hover:bg-amber-700 focus:ring-amber-500 disabled:bg-amber-300',
+    warning: 'bg-nihal-oil text-white hover:bg-opacity-90 focus:ring-nihal-yellow disabled:bg-opacity-70',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 disabled:bg-red-300'
   };
 

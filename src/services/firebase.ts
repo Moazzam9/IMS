@@ -281,6 +281,21 @@ export class FirebaseService {
     });
     return newStockMovementRef.key!;
   }
+  
+  // Settings
+  static async saveSettings(settingsType: string, settings: any, userId: string): Promise<void> {
+    const settingsRef = ref(database, `users/${userId}/settings/${settingsType}`);
+    await set(settingsRef, {
+      ...settings,
+      updatedAt: new Date().toISOString()
+    });
+  }
+  
+  static async getSettings(settingsType: string, userId: string): Promise<any> {
+    const settingsRef = ref(database, `users/${userId}/settings/${settingsType}`);
+    const snapshot = await get(settingsRef);
+    return snapshot.val();
+  }
 
   static subscribeToStockMovements(callback: (stockMovements: StockMovement[]) => void, userId: string): () => void {
     const stockMovementsRef = ref(database, `users/${userId}/stockMovements`);

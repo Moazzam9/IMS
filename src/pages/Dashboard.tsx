@@ -13,43 +13,43 @@ const Dashboard: React.FC = () => {
       title: 'Total Products',
       value: products.length.toString(),
       icon: Package,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100'
+      color: 'text-nihal-blue',
+      bgColor: 'bg-nihal-light-blue'
     },
     {
       title: 'Suppliers',
       value: suppliers.length.toString(),
       icon: Users,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100'
+      color: 'text-nihal-blue',
+      bgColor: 'bg-nihal-silver'
     },
     {
       title: 'Total Purchases',
       value: purchases.length.toString(),
       icon: ShoppingCart,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100'
+      color: 'text-nihal-blue',
+      bgColor: 'bg-nihal-light-blue'
     },
     {
       title: 'Total Sales',
       value: sales.length.toString(),
       icon: TrendingUp,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100'
+      color: 'text-nihal-blue',
+      bgColor: 'bg-nihal-silver'
     },
     {
       title: 'Low Stock Items',
       value: products.filter(p => p.currentStock < (p.minStockLevel || 10)).length.toString(),
       icon: AlertTriangle,
-      color: 'text-red-600',
-      bgColor: 'bg-red-100'
+      color: 'text-nihal-blue',
+      bgColor: 'bg-nihal-light-blue'
     },
     {
       title: 'Total Revenue',
       value: `₨${sales.reduce((sum, sale) => sum + sale.netAmount, 0).toLocaleString()}`,
       icon: DollarSign,
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-100'
+      color: 'text-nihal-yellow',
+      bgColor: 'bg-nihal-blue'
     }
   ];
 
@@ -66,7 +66,7 @@ const Dashboard: React.FC = () => {
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-nihal-blue mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading your data...</p>
           </div>
         </div>
@@ -96,7 +96,7 @@ const Dashboard: React.FC = () => {
               {lowStockProducts.length > 0 ? (
                 <div className="space-y-3">
                   {lowStockProducts.map((product) => (
-                    <div key={product.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                    <div key={product.id} className="flex items-center justify-between p-3 bg-nihal-light-blue rounded-lg">
                       <div>
                         <p className="font-medium text-gray-900">{product.name}</p>
                         <p className="text-sm text-gray-600">Code: {product.code}</p>

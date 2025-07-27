@@ -23,16 +23,14 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-nihal-light-blue to-nihal-silver flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
-              <Package size={32} className="text-white" />
-            </div>
+            <img src="/company.png" alt="Nihal Battery House Logo" className="w-32 h-32 object-contain" />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Inventory Pro
+            Nihal Battery House
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Sign in to your account
@@ -58,7 +56,7 @@ const Login: React.FC = () => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-nihal-blue focus:border-nihal-blue"
                   placeholder="Enter your username"
                 />
               </div>
@@ -73,7 +71,7 @@ const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-nihal-blue focus:border-nihal-blue"
                   placeholder="Enter your password"
                 />
               </div>
@@ -90,15 +88,13 @@ const Login: React.FC = () => {
               </Button>
             </div>
 
-            <div className="mt-4 text-center text-sm text-gray-600">
-              Demo credentials: admin / admin123
-            </div>
+         
             
             <div className="mt-4 text-center">
               <button 
                 type="button" 
                 onClick={switchToSignup}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm text-nihal-blue hover:text-nihal-blue hover:underline"
               >
                 Don't have an account? Sign up
               </button>

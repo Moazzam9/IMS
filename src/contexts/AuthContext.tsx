@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const newUserId = await FirebaseService.addUser({
         username,
         email,
-        role: 'staff',
+        role: 'admin',
         firebaseUid: firebaseUser.uid,
       });
 
