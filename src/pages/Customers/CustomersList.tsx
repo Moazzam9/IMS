@@ -8,21 +8,29 @@ import Modal from '../../components/Common/Modal';
 import SearchBar from '../../components/Common/SearchBar';
 import { Plus, Edit, Trash2, User } from 'lucide-react';
 import { Customer } from '../../types';
-import { FirebaseService } from '../../services/firebase';
 
 const CustomersList: React.FC = () => {
   const { customers, loading, addCustomer, updateCustomer, deleteCustomer } = useApp();
   const { showToast } = useToast();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFilter, setSearchFilter] = useState('name');
-  
+
+  const [formData, setFormData] = useState({
+    code: '',
+    name: '',
+    phone: '',
+    email: '',
+    address: ''
+  });
+
   // Filter customers based on search term and filter
   const filteredCustomers = useMemo(() => {
     if (!searchTerm) return customers;
-    
+
     return customers.filter(customer => {
       const value = customer[searchFilter as keyof Customer];
       if (typeof value === 'string') {
@@ -33,19 +41,11 @@ const CustomersList: React.FC = () => {
       return false;
     });
   }, [customers, searchTerm, searchFilter]);
-  
-  const [formData, setFormData] = useState({
-    code: '',
-    name: '',
-    phone: '',
-    email: '',
-    address: ''
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
       if (editingCustomer) {
         await updateCustomer(editingCustomer.id, formData);
@@ -98,15 +98,6 @@ const CustomersList: React.FC = () => {
     { key: 'name', label: 'Name' },
     { key: 'phone', label: 'Phone' },
     { key: 'email', label: 'Email' },
-    { 
-      key: 'balance', 
-      label: 'Balance',
-      render: (value: number) => (
-        <span className={value > 0 ? 'text-red-600' : value < 0 ? 'text-green-600' : 'text-gray-900'}>
-          ₨{Math.abs(value).toFixed(2)} {value > 0 ? '(Dr)' : value < 0 ? '(Cr)' : ''}
-        </span>
-      )
-    },
     {
       key: 'actions',
       label: 'Actions',
@@ -262,8 +253,7 @@ const CustomersList: React.FC = () => {
             <Button type="submit" icon={User} disabled={isSubmitting}>
               {isSubmitting 
                 ? (editingCustomer ? 'Updating...' : 'Adding...') 
-                : (editingCustomer ? 'Update Customer' : 'Add Customer')
-              }
+                : (editingCustomer ? 'Update Customer' : 'Add Customer')}
             </Button>
           </div>
         </form>
