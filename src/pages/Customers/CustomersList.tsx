@@ -1,18 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
+import { useToast } from '../../contexts/ToastContext';
 import Card from '../../components/Common/Card';
 import Button from '../../components/Common/Button';
 import Table from '../../components/Common/Table';
 import Modal from '../../components/Common/Modal';
+import SearchBar from '../../components/Common/SearchBar';
 import { Plus, Edit, Trash2, User } from 'lucide-react';
 import { Customer } from '../../types';
 import { FirebaseService } from '../../services/firebase';
 
 const CustomersList: React.FC = () => {
   const { customers, loading, addCustomer, updateCustomer, deleteCustomer } = useApp();
+  const { showToast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchFilter, setSearchFilter] = useState('name');
+  
+  // Filter customers based on search term and filter
+  const filteredCustomers = useMemo(() => {
+    if (!searchTerm) return customers;
+    
+    return customers.filter(customer => {
+      const value = customer[searchFilter as keyof Customer];
+      if (typeof value === 'string') {
+        return value.toLowerCase().includes(searchTerm.toLowerCase());
+      } else if (typeof value === 'number') {
+        return value.toString().includes(searchTerm);
+      }
+      return false;
+    });
+  }, [customers, searchTerm, searchFilter]);
+  
   const [formData, setFormData] = useState({
     code: '',
     name: '',
@@ -43,7 +64,7 @@ const CustomersList: React.FC = () => {
       });
     } catch (error) {
       console.error('Error saving customer:', error);
-      alert('Error saving customer. Please try again.');
+      showToast('Error saving customer. Please try again.', 'error');
     }
 
     setIsSubmitting(false);
@@ -67,7 +88,7 @@ const CustomersList: React.FC = () => {
         await deleteCustomer(customerId);
       } catch (error) {
         console.error('Error deleting customer:', error);
-        alert('Error deleting customer. Please try again.');
+        showToast('Error deleting customer. Please try again.', 'error');
       }
     }
   };
@@ -113,7 +134,7 @@ const CustomersList: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-          <p className="text-gray-600">Manage your customer relationships</p>
+          <p className="text-gray-600">Manage your customer database</p>
         </div>
         <Button icon={Plus} onClick={() => setIsModalOpen(true)}>
           Add Customer
@@ -121,13 +142,29 @@ const CustomersList: React.FC = () => {
       </div>
 
       <Card>
+        <div className="p-4 border-b">
+          <SearchBar 
+            placeholder="Search customers by name, code, or contact info..."
+            onSearch={(term, filter) => {
+              setSearchTerm(term);
+              setSearchFilter(filter);
+            }}
+            filterOptions={[
+              { key: 'name', label: 'Name' },
+              { key: 'code', label: 'Code' },
+              { key: 'phone', label: 'Phone' },
+              { key: 'email', label: 'Email' },
+              { key: 'address', label: 'Address' }
+            ]}
+          />
+        </div>
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-2 text-gray-600">Loading customers...</span>
           </div>
         ) : (
-          <Table columns={columns} data={customers} />
+          <Table columns={columns} data={filteredCustomers} />
         )}
       </Card>
 

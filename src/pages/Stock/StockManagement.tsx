@@ -10,14 +10,10 @@ const StockManagement: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<string>('');
   
   // Filter stock movements by selected product
+  // Data is already sorted by newest first in AppContext
   const filteredMovements = selectedProduct
     ? stockMovements.filter(movement => movement.productId === selectedProduct)
     : stockMovements;
-
-  // Sort movements by date (newest first)
-  const sortedMovements = [...filteredMovements].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
 
   const columns = [
     { 
@@ -147,7 +143,7 @@ const StockManagement: React.FC = () => {
             <span className="ml-2 text-gray-600">Loading stock movements...</span>
           </div>
         ) : (
-          <Table columns={columns} data={sortedMovements} />
+          <Table columns={columns} data={filteredMovements} />
         )}
       </Card>
 

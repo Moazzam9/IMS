@@ -54,7 +54,8 @@ const Dashboard: React.FC = () => {
   ];
 
   const lowStockProducts = products.filter(p => p.currentStock < (p.minStockLevel || 10)).slice(0, 5);
-  const recentSales = sales.slice(-5).reverse();
+  // Get the 5 most recent sales (already sorted by newest first in AppContext)
+  const recentSales = sales.slice(0, 5);
 
   return (
     <div className="space-y-6">

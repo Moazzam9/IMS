@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../../components/Common/Card';
 import Button from '../../components/Common/Button';
-import { Settings, Store, Printer, Database, User, Shield } from 'lucide-react';
+import { Settings, Store, Printer, Database } from 'lucide-react';
 import { FirebaseService } from '../../services/firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 interface CompanyInfo {
   name: string;
@@ -27,7 +28,8 @@ interface PrintSettings {
 
 const SettingsPage: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>('company');
+  const { showToast } = useToast();
+  const [activeTab, setActiveTab] = useState<string>('company'); // Default to company tab
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
     name: 'My Inventory System',
     address: '123 Business Street, City',
@@ -59,6 +61,7 @@ const SettingsPage: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading settings from Firebase:', error);
+        showToast('Error loading settings. Please try again.', 'error');
       }
     };
     
@@ -112,7 +115,7 @@ const SettingsPage: React.FC = () => {
   // Save settings to Firebase
   const saveSettings = async () => {
     if (!user) {
-      alert('You must be logged in to save settings');
+      showToast('You must be logged in to save settings', 'error');
       return;
     }
     
@@ -126,11 +129,11 @@ const SettingsPage: React.FC = () => {
       await FirebaseService.saveSettings('printSettings', printSettings, user.id);
       
       setIsSubmitting(false);
-      alert('Settings saved successfully to your account!');
+      showToast('Settings saved successfully to your account!', 'success');
     } catch (error) {
       console.error('Error saving settings to Firebase:', error);
       setIsSubmitting(false);
-      alert('Error saving settings. Please try again.');
+      showToast('Error saving settings. Please try again.', 'error');
     }
   };
   
@@ -169,22 +172,6 @@ const SettingsPage: React.FC = () => {
               >
                 <Database className="mr-3 h-5 w-5" />
                 Database Backup
-              </button>
-              
-              <button
-                className={`w-full flex items-center px-4 py-3 text-left ${activeTab === 'users' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                onClick={() => setActiveTab('users')}
-              >
-                <User className="mr-3 h-5 w-5" />
-                User Management
-              </button>
-              
-              <button
-                className={`w-full flex items-center px-4 py-3 text-left ${activeTab === 'security' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                onClick={() => setActiveTab('security')}
-              >
-                <Shield className="mr-3 h-5 w-5" />
-                Security
               </button>
             </nav>
           </Card>
@@ -487,31 +474,7 @@ const SettingsPage: React.FC = () => {
               </div>
             )}
             
-            {activeTab === 'users' && (
-              <div className="p-6">
-                <h2 className="text-xl font-medium text-gray-900 mb-4">User Management</h2>
-                <p className="text-gray-600 mb-6">Manage users who have access to the system.</p>
-                
-                <div className="bg-gray-50 p-4 rounded-md text-center">
-                  <User className="h-12 w-12 text-gray-400 mx-auto" />
-                  <h3 className="mt-2 text-md font-medium text-gray-900">User Management Coming Soon</h3>
-                  <p className="mt-1 text-sm text-gray-500">This feature will be available in a future update.</p>
-                </div>
-              </div>
-            )}
-            
-            {activeTab === 'security' && (
-              <div className="p-6">
-                <h2 className="text-xl font-medium text-gray-900 mb-4">Security Settings</h2>
-                <p className="text-gray-600 mb-6">Configure security settings for your application.</p>
-                
-                <div className="bg-gray-50 p-4 rounded-md text-center">
-                  <Shield className="h-12 w-12 text-gray-400 mx-auto" />
-                  <h3 className="mt-2 text-md font-medium text-gray-900">Security Settings Coming Soon</h3>
-                  <p className="mt-1 text-sm text-gray-500">This feature will be available in a future update.</p>
-                </div>
-              </div>
-            )}
+
             
             {/* Save button for all tabs */}
             <div className="px-6 py-4 bg-gray-50 border-t flex justify-end">

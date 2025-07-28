@@ -1,6 +1,7 @@
 import { database } from '../config/firebase';
-import { ref, push, set, get, remove, onValue, off, update } from 'firebase/database';
-import { Product, Supplier, Customer, Purchase, Sale, User, StockMovement } from '../types';
+import { ref, push, set, update, remove, onValue, off, get } from 'firebase/database';
+import { Product, Supplier, Customer, Purchase, Sale, User } from '../types';
+import { OldBatteryService } from './oldBatteryService';
 
 // Generic Firebase service functions
 export class FirebaseService {
@@ -156,13 +157,91 @@ export class FirebaseService {
 
   // Sales
   static async addSale(sale: Omit<Sale, 'id'>, userId: string): Promise<string> {
-    const salesRef = ref(database, `users/${userId}/sales`);
-    const newSaleRef = push(salesRef);
-    await set(newSaleRef, {
-      ...sale,
-      createdAt: new Date().toISOString()
-    });
-    return newSaleRef.key!;
+    try {
+      if (!Array.isArray(sale.items) || sale.items.length === 0) {
+        throw new Error('Sale must include at least one item');
+      }
+
+      const salesRef = ref(database, `users/${userId}/sales`);
+      const newSaleRef = push(salesRef);
+      const saleId = newSaleRef.key!;
+
+      const timestamp = new Date().toISOString();
+
+      // Create the sale record without items array to avoid duplication
+      const { items, ...saleData } = sale;
+      await set(newSaleRef, {
+        ...saleData,
+        id: saleId,
+        createdAt: timestamp
+      });
+
+      // Create sale items records
+      const saleItemsRef = ref(database, `users/${userId}/saleItems/${saleId}`);
+      
+      try {
+        // First save all sale items
+        const savedItems = await Promise.all(items.map(async (item) => {
+          const newItemRef = push(saleItemsRef);
+          const itemId = newItemRef.key!;
+
+          // Validate required fields
+          if (!item.productId || !item.quantity || !item.salePrice || typeof item.total !== 'number') {
+            throw new Error('Invalid sale item data');
+          }
+
+          // Prepare sale item data
+          const itemData = {
+            id: itemId,
+            saleId,
+            productId: item.productId,
+            quantity: item.quantity,
+            salePrice: item.salePrice,
+            discount: item.discount || 0,
+            total: item.total,
+            includeOldBattery: !!item.oldBatteryData,
+            createdAt: timestamp
+          };
+
+          await set(newItemRef, itemData);
+          return { itemId, item };
+        }));
+
+        // Then save all old battery data
+        if (savedItems.some(({ item }) => item.oldBatteryData)) {
+          const oldBatteryPromises = savedItems
+            .filter(({ item }) => item.oldBatteryData)
+            .map(async ({ itemId, item }) => {
+              if (!item.oldBatteryData?.name || !item.oldBatteryData?.weight || 
+                  !item.oldBatteryData?.ratePerKg || typeof item.oldBatteryData?.deductionAmount !== 'number') {
+                throw new Error('Invalid old battery data');
+              }
+
+              const oldBatteryData = {
+                name: item.oldBatteryData.name,
+                weight: item.oldBatteryData.weight,
+                ratePerKg: item.oldBatteryData.ratePerKg,
+                deductionAmount: item.oldBatteryData.deductionAmount,
+                saleId,
+                saleItemId: itemId
+              };
+              await OldBatteryService.addOldBattery(oldBatteryData, userId);
+            });
+
+          await Promise.all(oldBatteryPromises);
+        }
+
+        return saleId;
+      } catch (error) {
+        console.error('Error saving sale items or old batteries:', error);
+        // Delete the sale if saving items fails
+        await remove(ref(database, `users/${userId}/sales/${saleId}`));
+        throw new Error('Failed to save sale items or old batteries');
+      }
+    } catch (error) {
+      console.error('Error adding sale:', error);
+      throw new Error('Failed to add sale to database: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
   }
 
   static async updateSale(id: string, sale: Partial<Sale>, userId: string): Promise<void> {

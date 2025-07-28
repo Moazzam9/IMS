@@ -2,6 +2,7 @@ import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppProvider } from './contexts/AppContext';
+import { ToastProvider } from './contexts/ToastContext';
 import Layout from './components/Layout/Layout';
 import Login from './components/Auth/Login';
 import SignUp from './components/Auth/SignUp';
@@ -14,6 +15,7 @@ import SalesList from './pages/Sales/SalesList';
 import StockManagement from './pages/Stock/StockManagement';
 import ReportsPage from './pages/Reports/ReportsPage';
 import SettingsPage from './pages/Settings/SettingsPage';
+import OldBatteriesList from './pages/OldBatteries/OldBatteriesList';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -25,8 +27,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/purchases" element={<PurchasesList />} />
       <Route path="/sales" element={<SalesList />} />
       <Route path="/stock" element={<StockManagement />} />
-      <Route path="/returns" element={<div className="p-6">Returns page coming soon...</div>} />
-      <Route path="/transfers" element={<div className="p-6">Transfers page coming soon...</div>} />
+      <Route path="/old-batteries" element={<OldBatteriesList />} />
       <Route path="/reports" element={<ReportsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
     </Routes>
@@ -65,9 +66,11 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <ToastProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </ToastProvider>
     </AuthProvider>
   );
 }

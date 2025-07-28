@@ -57,8 +57,26 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
 
   // Get product details for a sale item
   const getProductDetails = (item: SaleItem) => {
-    return products.find(p => p.id === item.productId);
+    const product = products.find(p => p.id === item.productId);
+    if (product && item.oldBatteryData) {
+      const deductionAmount = item.oldBatteryData.weight * item.oldBatteryData.ratePerKg;
+      return {
+        ...product,
+        name: `${product.name} (Old Battery: ${item.oldBatteryData.name}, Weight: ${item.oldBatteryData.weight}kg @ Rs.${item.oldBatteryData.ratePerKg}/kg = Rs.${deductionAmount} deduction)`,
+        oldBatteryDeduction: deductionAmount
+      };
+    }
+    return product;
   };
+
+  // Calculate total old battery deductions
+  const totalOldBatteryDeductions = sale.items
+    .filter(item => item.oldBatteryData)
+    .reduce((total, item) => {
+      const deductionAmount = item.oldBatteryData ? 
+        item.oldBatteryData.weight * item.oldBatteryData.ratePerKg : 0;
+      return total + deductionAmount;
+    }, 0);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -169,10 +187,18 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                   <span className="font-medium">Subtotal:</span>
                   <span>₨{sale.totalAmount.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between py-2">
-                  <span className="font-medium">Discount:</span>
-                  <span>₨{(sale.discount || 0).toFixed(2)}</span>
-                </div>
+                {(sale.discount - totalOldBatteryDeductions) > 0 && (
+                  <div className="flex justify-between py-2">
+                    <span className="font-medium">Regular Discount:</span>
+                    <span>₨{(sale.discount - totalOldBatteryDeductions).toFixed(2)}</span>
+                  </div>
+                )}
+                {totalOldBatteryDeductions > 0 && (
+                  <div className="flex justify-between py-2 text-green-600">
+                    <span className="font-medium">Old Battery Deduction:</span>
+                    <span>₨{totalOldBatteryDeductions.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between py-2 border-t border-b font-bold">
                   <span>Total:</span>
                   <span>₨{(sale.netAmount || sale.totalAmount).toFixed(2)}</span>

@@ -6,12 +6,11 @@ import {
   Users,
   ShoppingCart,
   TrendingUp,
-  RotateCcw,
-  ArrowLeftRight,
   BarChart3,
   Settings,
   User,
-  Boxes
+  Boxes,
+  Battery
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -23,8 +22,7 @@ const Sidebar: React.FC = () => {
     { to: '/purchases', icon: ShoppingCart, label: 'Purchases' },
     { to: '/sales', icon: TrendingUp, label: 'Sales' },
     { to: '/stock', icon: Boxes, label: 'Stock' },
-    { to: '/returns', icon: RotateCcw, label: 'Returns' },
-    { to: '/transfers', icon: ArrowLeftRight, label: 'Transfers' },
+    { to: '/old-batteries', icon: Battery, label: 'Old Batteries' },
     { to: '/reports', icon: BarChart3, label: 'Reports' },
     { to: '/settings', icon: Settings, label: 'Settings' },
   ];

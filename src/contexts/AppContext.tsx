@@ -159,13 +159,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       
       try {
-        // Subscribe to real-time updates with user ID
-        unsubscribeProducts = FirebaseService.subscribeToProducts(setProducts, userId);
-        unsubscribeSuppliers = FirebaseService.subscribeToSuppliers(setSuppliers, userId);
-        unsubscribeCustomers = FirebaseService.subscribeToCustomers(setCustomers, userId);
-        unsubscribePurchases = FirebaseService.subscribeToPurchases(setPurchases, userId);
-        unsubscribeSales = FirebaseService.subscribeToSales(setSales, userId);
-        unsubscribeStockMovements = FirebaseService.subscribeToStockMovements(setStockMovements, userId);
+        // Subscribe to real-time updates with user ID and sort by newest first
+        unsubscribeProducts = FirebaseService.subscribeToProducts((products) => {
+          // Sort products by createdAt date (newest first)
+          const sortedProducts = [...products].sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setProducts(sortedProducts);
+        }, userId);
+        
+        unsubscribeSuppliers = FirebaseService.subscribeToSuppliers((suppliers) => {
+          // Sort suppliers by createdAt date (newest first)
+          const sortedSuppliers = [...suppliers].sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setSuppliers(sortedSuppliers);
+        }, userId);
+        
+        unsubscribeCustomers = FirebaseService.subscribeToCustomers((customers) => {
+          // Sort customers by createdAt date (newest first)
+          const sortedCustomers = [...customers].sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setCustomers(sortedCustomers);
+        }, userId);
+        
+        unsubscribePurchases = FirebaseService.subscribeToPurchases((purchases) => {
+          // Sort purchases by createdAt date (newest first)
+          const sortedPurchases = [...purchases].sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setPurchases(sortedPurchases);
+        }, userId);
+        
+        unsubscribeSales = FirebaseService.subscribeToSales((sales) => {
+          // Sort sales by createdAt date (newest first)
+          const sortedSales = [...sales].sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setSales(sortedSales);
+        }, userId);
+        
+        unsubscribeStockMovements = FirebaseService.subscribeToStockMovements((movements) => {
+          // Sort stock movements by createdAt date (newest first)
+          const sortedMovements = [...movements].sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setStockMovements(sortedMovements);
+        }, userId);
         
         setLoading(false);
       } catch (error) {

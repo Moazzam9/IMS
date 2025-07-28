@@ -1,18 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
+import { useToast } from '../../contexts/ToastContext';
 import Card from '../../components/Common/Card';
 import Button from '../../components/Common/Button';
 import Table from '../../components/Common/Table';
 import Modal from '../../components/Common/Modal';
+import SearchBar from '../../components/Common/SearchBar';
 import { Plus, Edit, Trash2, Users } from 'lucide-react';
 import { Supplier } from '../../types';
 import { FirebaseService } from '../../services/firebase';
 
 const SuppliersList: React.FC = () => {
   const { suppliers, loading, addSupplier, updateSupplier, deleteSupplier } = useApp();
+  const { showToast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchFilter, setSearchFilter] = useState('name');
+  
+  // Filter suppliers based on search term and filter
+  const filteredSuppliers = useMemo(() => {
+    if (!searchTerm) return suppliers;
+    
+    return suppliers.filter(supplier => {
+      const value = supplier[searchFilter as keyof Supplier];
+      if (typeof value === 'string') {
+        return value.toLowerCase().includes(searchTerm.toLowerCase());
+      } else if (typeof value === 'number') {
+        return value.toString().includes(searchTerm);
+      }
+      return false;
+    });
+  }, [suppliers, searchTerm, searchFilter]);
+  
   const [formData, setFormData] = useState({
     code: '',
     name: '',
@@ -45,7 +66,7 @@ const SuppliersList: React.FC = () => {
       });
     } catch (error) {
       console.error('Error saving supplier:', error);
-      alert('Error saving supplier. Please try again.');
+      showToast('Error saving supplier. Please try again.', 'error');
     }
 
     setIsSubmitting(false);
@@ -70,7 +91,7 @@ const SuppliersList: React.FC = () => {
         await deleteSupplier(supplierId);
       } catch (error) {
         console.error('Error deleting supplier:', error);
-        alert('Error deleting supplier. Please try again.');
+        showToast('Error deleting supplier. Please try again.', 'error');
       }
     }
   };
@@ -125,13 +146,29 @@ const SuppliersList: React.FC = () => {
       </div>
 
       <Card>
+        <div className="p-4 border-b">
+          <SearchBar 
+            placeholder="Search suppliers by name, code, or contact person..."
+            onSearch={(term, filter) => {
+              setSearchTerm(term);
+              setSearchFilter(filter);
+            }}
+            filterOptions={[
+              { key: 'name', label: 'Name' },
+              { key: 'code', label: 'Code' },
+              { key: 'contactPerson', label: 'Contact Person' },
+              { key: 'phone', label: 'Phone' },
+              { key: 'email', label: 'Email' }
+            ]}
+          />
+        </div>
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-2 text-gray-600">Loading suppliers...</span>
           </div>
         ) : (
-          <Table columns={columns} data={suppliers} />
+          <Table columns={columns} data={filteredSuppliers} />
         )}
       </Card>
 

@@ -24,7 +24,7 @@ module.exports = {
     createStartMenuShortcut: true,
     shortcutName: "Inventory Management System",
     uninstallDisplayName: "Inventory Management System",
-    installerIcon: "public/favicon.svg",
-    uninstallerIcon: "public/favicon.svg"
+    installerIcon: "public/favicon.ico",
+    uninstallerIcon: "public/favicon.ico"
   }
 };

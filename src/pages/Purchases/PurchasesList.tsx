@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
+import { useToast } from '../../contexts/ToastContext';
 import Card from '../../components/Common/Card';
 import Button from '../../components/Common/Button';
 import Table from '../../components/Common/Table';
 import Modal from '../../components/Common/Modal';
+import SearchBar from '../../components/Common/SearchBar';
 import { Plus, Edit, Trash2, ShoppingCart, Eye } from 'lucide-react';
 import { Purchase, PurchaseItem, StockMovement } from '../../types';
 import { FirebaseService } from '../../services/firebase';
 
 const PurchasesList: React.FC = () => {
   const { purchases, suppliers, products, loading, addPurchase, updatePurchase, deletePurchase, addStockMovement } = useApp();
+  const { showToast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,6 +24,35 @@ const PurchasesList: React.FC = () => {
     discount: 0
   });
   const [purchaseItems, setPurchaseItems] = useState<Omit<PurchaseItem, 'id' | 'purchaseId'>[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchFilter, setSearchFilter] = useState('invoiceNumber');
+  
+  // Filter purchases based on search term and filter
+  const filteredPurchases = useMemo(() => {
+    if (!searchTerm) return purchases;
+    
+    return purchases.filter(purchase => {
+      // Special case for supplier name search
+      if (searchFilter === 'supplierName') {
+        const supplier = suppliers.find(s => s.id === purchase.supplierId);
+        return supplier && supplier.name.toLowerCase().includes(searchTerm.toLowerCase());
+      }
+      
+      // Special case for date search
+      if (searchFilter === 'purchaseDate') {
+        const date = new Date(purchase.purchaseDate).toLocaleDateString();
+        return date.includes(searchTerm);
+      }
+      
+      const value = purchase[searchFilter as keyof Purchase];
+      if (typeof value === 'string') {
+        return value.toLowerCase().includes(searchTerm.toLowerCase());
+      } else if (typeof value === 'number') {
+        return value.toString().includes(searchTerm);
+      }
+      return false;
+    });
+  }, [purchases, searchTerm, searchFilter, suppliers]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +102,7 @@ const PurchasesList: React.FC = () => {
       setPurchaseItems([]);
     } catch (error) {
       console.error('Error saving purchase:', error);
-      alert('Error saving purchase. Please try again.');
+      showToast('Error saving purchase. Please try again.', 'error');
     }
 
     setIsSubmitting(false);
@@ -133,7 +165,7 @@ const PurchasesList: React.FC = () => {
         await deletePurchase(purchaseId);
       } catch (error) {
         console.error('Error deleting purchase:', error);
-        alert('Error deleting purchase. Please try again.');
+        showToast('Error deleting purchase. Please try again.', 'error');
       }
     }
   };
@@ -244,13 +276,28 @@ const PurchasesList: React.FC = () => {
       </div>
 
       <Card>
+        <div className="p-4 border-b">
+          <SearchBar 
+            placeholder="Search purchases by invoice number, supplier, or date..."
+            onSearch={(term, filter) => {
+              setSearchTerm(term);
+              setSearchFilter(filter);
+            }}
+            filterOptions={[
+              { key: 'invoiceNumber', label: 'Invoice #' },
+              { key: 'supplierName', label: 'Supplier' },
+              { key: 'purchaseDate', label: 'Date' },
+              { key: 'status', label: 'Status' }
+            ]}
+          />
+        </div>
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-2 text-gray-600">Loading purchases...</span>
           </div>
         ) : (
-          <Table columns={columns} data={purchases} />
+          <Table columns={columns} data={filteredPurchases} />
         )}
       </Card>
 

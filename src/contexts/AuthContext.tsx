@@ -6,6 +6,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  AuthError
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 

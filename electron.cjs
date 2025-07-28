@@ -16,7 +16,7 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    icon: path.join(__dirname, process.env.NODE_ENV === 'development' ? 'public/favicon.ico' : 'favicon.ico'),
+    icon: path.join(__dirname, 'public', 'favicon.ico'),
     show: false
   });
 
@@ -34,6 +34,18 @@ function createWindow() {
         protocol: 'file:',
         slashes: true
       });
+      
+      // Copy favicon.ico to dist directory if it doesn't exist
+      const distFaviconPath = path.join(__dirname, 'dist', 'favicon.ico');
+      const publicFaviconPath = path.join(__dirname, 'public', 'favicon.ico');
+      if (!fs.existsSync(distFaviconPath) && fs.existsSync(publicFaviconPath)) {
+        try {
+          fs.copyFileSync(publicFaviconPath, distFaviconPath);
+          console.log('Copied favicon.ico to dist directory');
+        } catch (err) {
+          console.error('Error copying favicon.ico:', err);
+        }
+      }
     } else {
       console.error('Cannot find index.html in dist folder');
       app.quit();

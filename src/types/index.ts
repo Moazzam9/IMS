@@ -41,6 +41,9 @@ export interface Product {
   minStockLevel?: number;
   unit: string;
   createdAt: string;
+  isBattery?: boolean;
+  packing?: string;
+  retailer?: string;
 }
 
 export interface Purchase {
@@ -97,6 +100,15 @@ export interface SaleItem {
   salePrice: number;
   discount: number;
   total: number;
+  includeOldBattery: boolean;
+  oldBatteryData?: {
+    name: string;
+    weight: number;
+    ratePerKg: number;
+    deductionAmount: number;
+  };
+  createdAt: string;
+  oldBatteryId?: string;
 }
 
 export interface StockMovement {
@@ -130,4 +142,15 @@ export interface ReturnItem {
   quantity: number;
   price: number;
   total: number;
+}
+
+export interface OldBattery {
+  id: string;
+  name: string;
+  weight: number;
+  ratePerKg: number;
+  deductionAmount: number;
+  saleId: string;
+  saleItemId: string;
+  createdAt: string;
 }

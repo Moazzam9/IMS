@@ -17,7 +17,9 @@ export default defineConfig({
       output: {
         manualChunks: undefined
       }
-    }
+    },
+    // Ensure public directory files are copied to dist
+    copyPublicDir: true
   },
   resolve: {
     alias: {

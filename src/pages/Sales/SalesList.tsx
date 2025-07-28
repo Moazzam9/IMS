@@ -1,20 +1,59 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import Card from '../../components/Common/Card';
 import Button from '../../components/Common/Button';
 import Table from '../../components/Common/Table';
 import Modal from '../../components/Common/Modal';
+import SearchBar from '../../components/Common/SearchBar';
 import InvoicePrint from '../../components/Sales/InvoicePrint';
-import { Plus, Edit, Trash2, TrendingUp, Printer } from 'lucide-react';
-import { Sale, SaleItem } from '../../types';
+import OldBatteryForm from '../../components/Sales/OldBatteryForm';
+import { Plus, Edit, Trash2, TrendingUp, Printer, Battery } from 'lucide-react';
+import { Sale, SaleItem, OldBattery } from '../../types';
+import { database } from '../../config/firebase';
+import { ref, push, set, remove } from 'firebase/database';
 import { FirebaseService } from '../../services/firebase';
+import { OldBatteryService } from '../../services/oldBatteryService';
 
 const SalesList: React.FC = () => {
   const { sales, customers, products, loading, addSale, updateSale, deleteSale } = useApp();
+  const { user } = useAuth();
+  const userId = user?.firebaseUid;
+  const { showToast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSaleForPrint, setSelectedSaleForPrint] = useState<Sale | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchFilter, setSearchFilter] = useState('invoiceNumber');
+  
+  // Filter sales based on search term and filter
+  const filteredSales = useMemo(() => {
+    if (!searchTerm) return sales;
+    
+    return sales.filter(sale => {
+      // Special case for customer name search
+      if (searchFilter === 'customerName') {
+        const customer = customers.find(c => c.id === sale.customerId);
+        return customer && customer.name.toLowerCase().includes(searchTerm.toLowerCase());
+      }
+      
+      // Special case for date search
+      if (searchFilter === 'saleDate') {
+        const date = new Date(sale.saleDate).toLocaleDateString();
+        return date.includes(searchTerm);
+      }
+      
+      const value = sale[searchFilter as keyof Sale];
+      if (typeof value === 'string') {
+        return value.toLowerCase().includes(searchTerm.toLowerCase());
+      } else if (typeof value === 'number') {
+        return value.toString().includes(searchTerm);
+      }
+      return false;
+    });
+  }, [sales, searchTerm, searchFilter, customers]);
   
   // Monitor selectedSaleForPrint changes
   useEffect(() => {
@@ -47,7 +86,7 @@ const SalesList: React.FC = () => {
       }));
     }
   }, [isModalOpen, editingSale, sales]);
-  const [saleItems, setSaleItems] = useState<Omit<SaleItem, 'id' | 'saleId'>[]>([]);
+  const [saleItems, setSaleItems] = useState<(Omit<SaleItem, 'id' | 'saleId'> & { oldBatteryData?: Omit<OldBattery, 'id' | 'saleId' | 'saleItemId' | 'createdAt'> })[]>([]);
 
   // Calculate total discount from individual item discounts
   const calculateTotalDiscount = (items: Omit<SaleItem, 'id' | 'saleId'>[]) => {
@@ -71,30 +110,198 @@ const SalesList: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!userId) {
+      showToast('User authentication error', 'error');
+      return;
+    }
+
+    if (saleItems.length === 0) {
+      showToast('Please add at least one item to the sale', 'error');
+      return;
+    }
+
+    // Validate sale items data
+    const invalidSaleItem = saleItems.find(item => 
+      !item.productId ||
+      !item.quantity ||
+      !item.salePrice ||
+      typeof item.total !== 'number'
+    );
+
+    if (invalidSaleItem) {
+      showToast('Please fill in all sale item details correctly', 'error');
+      return;
+    }
+
+    // Validate old battery data
+    const invalidOldBatteryItem = saleItems.find(item => 
+      item.oldBatteryData && (
+        !item.oldBatteryData.name ||
+        !item.oldBatteryData.weight ||
+        !item.oldBatteryData.ratePerKg ||
+        typeof item.oldBatteryData.deductionAmount !== 'number'
+      )
+    );
+
+    if (invalidOldBatteryItem) {
+      showToast('Please fill in all old battery details correctly', 'error');
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
-      // Calculate totals using individual item discounts
-      const totalDiscount = saleItems.reduce((sum, item) => sum + (item.discount || 0), 0);
-      const totalAmount = saleItems.reduce((sum, item) => sum + (item.quantity * item.salePrice), 0);
+      if (!userId) {
+        throw new Error('User authentication required');
+      }
+
+      // Calculate totals
+      const totalAmount = saleItems.reduce((sum, item) => sum + item.total, 0);
+      const totalDiscount = saleItems.reduce((sum, item) => {
+        const itemDiscount = item.discount || 0;
+        const oldBatteryDeduction = item.oldBatteryData?.deductionAmount || 0;
+        return sum + itemDiscount + oldBatteryDeduction;
+      }, 0);
       const netAmount = totalAmount - totalDiscount;
       const totalItems = saleItems.reduce((sum, item) => sum + item.quantity, 0);
+      
+      // Validate sale items before creating sale data
+      if (!saleItems || saleItems.length === 0) {
+        throw new Error('Sale must include at least one item');
+      }
+
+      // Validate required fields for each sale item
+      saleItems.forEach((item, index) => {
+        if (!item.productId || !item.quantity || !item.salePrice || typeof item.total !== 'number') {
+          throw new Error(`Invalid data for sale item ${index + 1}`);
+        }
+        if (item.oldBatteryData) {
+          if (!item.oldBatteryData.name || !item.oldBatteryData.weight || 
+              !item.oldBatteryData.ratePerKg || typeof item.oldBatteryData.deductionAmount !== 'number') {
+            throw new Error(`Invalid old battery data for item ${index + 1}`);
+          }
+        }
+      });
 
       const saleData = {
         ...formData,
-        discount: totalDiscount, // Ensure the discount field has the sum of all item discounts
+        discount: totalDiscount,
         totalAmount,
         netAmount,
         totalItems,
-        items: saleItems
+        createdAt: new Date().toISOString(),
+        items: saleItems.map(item => {
+          // Ensure all required fields are present and valid
+          if (!item.productId || !item.quantity || !item.salePrice || typeof item.total !== 'number') {
+            throw new Error('Invalid sale item data');
+          }
+
+          const saleItem = {
+            productId: item.productId,
+            quantity: item.quantity,
+            salePrice: item.salePrice,
+            discount: item.discount || 0,
+            total: item.total,
+            includeOldBattery: !!item.oldBatteryData
+          };
+
+          // Only include oldBatteryData if it exists and has all required fields
+          if (item.oldBatteryData) {
+            if (!item.oldBatteryData.name || !item.oldBatteryData.weight || 
+                !item.oldBatteryData.ratePerKg || typeof item.oldBatteryData.deductionAmount !== 'number') {
+              throw new Error('Invalid old battery data');
+            }
+            saleItem.oldBatteryData = {
+              name: item.oldBatteryData.name,
+              weight: item.oldBatteryData.weight,
+              ratePerKg: item.oldBatteryData.ratePerKg,
+              deductionAmount: item.oldBatteryData.deductionAmount
+            };
+          }
+
+          return saleItem;
+        })
       };
-
+      
+      let saleId;
+      
       if (editingSale) {
+        // Update existing sale
         await updateSale(editingSale.id, saleData);
+        saleId = editingSale.id;
+        
+        // Delete existing items to replace with new ones
+        const saleItemsRef = ref(database, `users/${userId}/saleItems/${saleId}`);
+        await remove(saleItemsRef);
+        
+        // Delete existing old batteries associated with this sale
+        const existingOldBatteries = await OldBatteryService.getOldBatteriesBySaleId(saleId, userId);
+        for (const oldBattery of existingOldBatteries) {
+          await OldBatteryService.deleteOldBattery(oldBattery.id, userId);
+        }
       } else {
-        await addSale(saleData);
+        // Add new sale
+        saleId = await addSale(saleData);
       }
+      
+      try {
+        // Add sale items and old batteries
+        const saleItemsRef = ref(database, `users/${userId}/saleItems/${saleId}`);
+        
+        // First, save all sale items and collect their IDs
+        const savedItems = await Promise.all(saleItems.map(async (item) => {
+          const newItemRef = push(saleItemsRef);
+          const saleItemId = newItemRef.key!;
+          
+          if (!item.productId || !item.quantity || !item.salePrice || typeof item.total !== 'number') {
+            throw new Error('Invalid sale item data');
+          }
 
+          const itemData = {
+            id: saleItemId,
+            saleId,
+            productId: item.productId,
+            quantity: item.quantity,
+            salePrice: item.salePrice,
+            discount: item.discount || 0,
+            total: item.total,
+            includeOldBattery: !!item.oldBatteryData,
+            createdAt: new Date().toISOString()
+          };
+          
+          // Add sale item
+          await set(newItemRef, itemData);
+          return { saleItemId, item };
+        }));
+
+        // Then, save all old battery data
+        const oldBatteryPromises = savedItems
+          .filter(({ item }) => item.oldBatteryData)
+          .map(async ({ saleItemId, item }) => {
+            if (!item.oldBatteryData?.name || !item.oldBatteryData?.weight || 
+                !item.oldBatteryData?.ratePerKg || typeof item.oldBatteryData?.deductionAmount !== 'number') {
+              throw new Error('Invalid old battery data');
+            }
+
+            const oldBatteryData = {
+              name: item.oldBatteryData.name,
+              weight: item.oldBatteryData.weight,
+              ratePerKg: item.oldBatteryData.ratePerKg,
+              deductionAmount: item.oldBatteryData.deductionAmount,
+              saleId,
+              saleItemId
+            };
+            await OldBatteryService.addOldBattery(oldBatteryData, userId);
+          });
+
+        await Promise.all(oldBatteryPromises);
+      } catch (error) {
+        console.error('Error saving sale items:', error);
+        // Delete the sale if saving items fails
+        await deleteSale(saleId);
+        throw new Error('Failed to save sale items and old battery data');
+      }
+      
       setIsModalOpen(false);
       setEditingSale(null);
       setFormData({
@@ -102,14 +309,14 @@ const SalesList: React.FC = () => {
         customerId: '',
         customerName: '',
         salesperson: '',
-        saleDate: new Date().toISOString().slice(0, 16), // Include date and time (YYYY-MM-DDTHH:MM)
+        saleDate: new Date().toISOString().slice(0, 16),
         discount: 0,
         status: 'completed'
       });
       setSaleItems([]);
     } catch (error) {
       console.error('Error saving sale:', error);
-      alert('Error saving sale. Please try again.');
+      showToast('Error saving sale. Please try again.', 'error');
     }
 
     setIsSubmitting(false);
@@ -144,7 +351,7 @@ const SalesList: React.FC = () => {
         await deleteSale(saleId);
       } catch (error) {
         console.error('Error deleting sale:', error);
-        alert('Error deleting sale. Please try again.');
+        showToast('Error deleting sale. Please try again.', 'error');
       }
     }
   };
@@ -160,17 +367,56 @@ const SalesList: React.FC = () => {
     
     setSaleItems([...saleItems, newItem]);
   };
+  
+  const handleOldBatteryChange = (index: number, oldBatteryData: {
+    name: string;
+    weight: number;
+    ratePerKg: number;
+    deductionAmount: number;
+  } | null) => {
+    const updatedItems = [...saleItems];
+    
+    if (oldBatteryData) {
+      updatedItems[index].oldBatteryData = oldBatteryData;
+      
+      // Recalculate total with old battery deduction
+      const subtotal = updatedItems[index].quantity * updatedItems[index].salePrice;
+      updatedItems[index].total = subtotal - (updatedItems[index].discount || 0) - oldBatteryData.deductionAmount;
+    } else {
+      // Remove old battery data and recalculate total without deduction
+      delete updatedItems[index].oldBatteryData;
+      
+      const subtotal = updatedItems[index].quantity * updatedItems[index].salePrice;
+      updatedItems[index].total = subtotal - (updatedItems[index].discount || 0);
+    }
+    
+    setSaleItems(updatedItems);
+  };
 
   const updateSaleItem = (index: number, field: string, value: any) => {
     const updatedItems = [...saleItems];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
     
+    // If product is selected, automatically set the sale price
+    if (field === 'productId' && value) {
+      const selectedProduct = products.find(p => p.id === value);
+      if (selectedProduct) {
+        updatedItems[index].salePrice = selectedProduct.salePrice;
+        
+        // Recalculate total after setting the sale price
+        const subtotal = updatedItems[index].quantity * selectedProduct.salePrice;
+        const oldBatteryDeduction = updatedItems[index].oldBatteryData?.deductionAmount || 0;
+        updatedItems[index].total = subtotal - (updatedItems[index].discount || 0) - oldBatteryDeduction;
+      }
+    }
+    
     // Calculate total for the item
     if (field === 'quantity' || field === 'salePrice' || field === 'discount') {
       const item = updatedItems[index];
-      // Calculate total after discount
+      // Calculate total after discount and old battery deduction
       const subtotal = item.quantity * item.salePrice;
-      updatedItems[index].total = subtotal - (item.discount || 0);
+      const oldBatteryDeduction = item.oldBatteryData?.deductionAmount || 0;
+      updatedItems[index].total = subtotal - (item.discount || 0) - oldBatteryDeduction;
       
       // Update the overall discount to be the sum of individual discounts
       const totalDiscount = updatedItems.reduce((sum, item) => sum + (item.discount || 0), 0);
@@ -279,13 +525,26 @@ const SalesList: React.FC = () => {
       </div>
 
       <Card>
+        <div className="p-4 border-b">
+          <SearchBar
+            placeholder="Search sales..."
+            onSearch={setSearchTerm}
+            onFilterChange={setSearchFilter}
+            filterOptions={[
+              { value: 'invoiceNumber', label: 'Invoice Number' },
+              { value: 'customerName', label: 'Customer Name' },
+              { value: 'saleDate', label: 'Sale Date' },
+              { value: 'status', label: 'Status' }
+            ]}
+          />
+        </div>
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-2 text-gray-600">Loading sales...</span>
           </div>
         ) : (
-          <Table columns={columns} data={sales} />
+          <Table columns={columns} data={filteredSales} />
         )}
       </Card>
 
@@ -429,7 +688,7 @@ const SalesList: React.FC = () => {
               
               {saleItems.map((item, index) => (
                 <div key={index} className="grid grid-cols-6 gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div>
+                  <div className="flex flex-col">
                     <select
                       value={item.productId}
                       onChange={(e) => updateSaleItem(index, 'productId', e.target.value)}
@@ -443,6 +702,34 @@ const SalesList: React.FC = () => {
                         </option>
                       ))}
                     </select>
+                    
+                    {/* Show old battery form under item name for battery products */}
+                    {item.productId && products.find(p => p.id === item.productId)?.isBattery && (
+                      <div className="mt-2 flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const oldBatteryData = item.oldBatteryData ? null : { name: '', weight: 0, ratePerKg: 0, deductionAmount: 0 };
+                            handleOldBatteryChange(index, oldBatteryData);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 flex items-center"
+                          title="Add/Remove Old Battery"
+                        >
+                          <Battery size={16} className="mr-1" />
+                          <span className="text-xs">Include Old Battery</span>
+                        </button>
+                      </div>
+                    )}
+                    
+                    {item.oldBatteryData && (
+                      <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
+                        <OldBatteryForm 
+                          enabled={true}
+                          initialData={item.oldBatteryData}
+                          onOldBatteryChange={(data) => handleOldBatteryChange(index, data)}
+                        />
+                      </div>
+                    )}
                   </div>
                   <div>
                     <input
@@ -486,13 +773,15 @@ const SalesList: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <button
-                      type="button"
-                      onClick={() => removeSaleItem(index)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center space-x-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => removeSaleItem(index)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

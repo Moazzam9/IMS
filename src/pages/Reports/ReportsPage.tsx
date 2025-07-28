@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../contexts/AppContext';
+import { useToast } from '../../contexts/ToastContext';
 import Card from '../../components/Common/Card';
 import Button from '../../components/Common/Button';
 import Table from '../../components/Common/Table';
@@ -12,6 +13,7 @@ type DateRange = 'today' | 'week' | 'month' | 'custom';
 
 const ReportsPage: React.FC = () => {
   const { purchases, sales, products, suppliers, customers, loading } = useApp();
+  const { showToast } = useToast();
   const [reportType, setReportType] = useState<ReportType>('purchase');
   const [dateRange, setDateRange] = useState<DateRange>('month');
   const [startDate, setStartDate] = useState<string>(
@@ -337,7 +339,7 @@ const ReportsPage: React.FC = () => {
   const printReport = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      alert('Please allow pop-ups to print reports');
+      showToast('Please allow pop-ups to print reports', 'error');
       return;
     }
 
@@ -492,10 +494,10 @@ const ReportsPage: React.FC = () => {
           <p className="text-gray-600">Generate and view business reports</p>
         </div>
         <div className="flex space-x-2">
-          <Button icon={Printer} onClick={printReport}>
+          <Button icon={Printer} className="bg-nihal-blue text-white hover:bg-nihal-blue/90" onClick={printReport}>
             Print Report
           </Button>
-          <Button icon={Download} onClick={exportToCSV}>
+          <Button icon={Download} className="bg-nihal-blue text-white hover:bg-nihal-blue/90" onClick={exportToCSV}>
             Export Report
           </Button>
         </div>
@@ -506,12 +508,12 @@ const ReportsPage: React.FC = () => {
           <input
             type="text"
             placeholder="Search by invoice number, supplier, or customer..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-nihal-yellow rounded-md focus:outline-none focus:ring-2 focus:ring-nihal-yellow"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-5 h-5 text-nihal-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
           </div>
@@ -519,34 +521,34 @@ const ReportsPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className={`cursor-pointer ${reportType === 'purchase' ? 'ring-2 ring-blue-500' : ''}`}
+        <Card className={`cursor-pointer ${reportType === 'purchase' ? 'ring-2 ring-nihal-yellow' : ''}`}
               onClick={() => setReportType('purchase')}>
           <div className="p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Purchase Report</h3>
-              <FileText className="text-blue-500" size={24} />
+              <h3 className="text-lg font-medium text-nihal-blue">Purchase Report</h3>
+              <FileText className="text-nihal-blue" size={24} />
             </div>
             <p className="text-sm text-gray-600 mt-2">View purchase history and supplier payments</p>
           </div>
         </Card>
         
-        <Card className={`cursor-pointer ${reportType === 'stock' ? 'ring-2 ring-blue-500' : ''}`}
+        <Card className={`cursor-pointer ${reportType === 'stock' ? 'ring-2 ring-nihal-yellow' : ''}`}
               onClick={() => setReportType('stock')}>
           <div className="p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Stock Report</h3>
-              <BarChart3 className="text-green-500" size={24} />
+              <h3 className="text-lg font-medium text-nihal-blue">Stock Report</h3>
+              <BarChart3 className="text-nihal-blue" size={24} />
             </div>
             <p className="text-sm text-gray-600 mt-2">View current stock levels and inventory value</p>
           </div>
         </Card>
         
-        <Card className={`cursor-pointer ${reportType === 'profit' ? 'ring-2 ring-blue-500' : ''}`}
+        <Card className={`cursor-pointer ${reportType === 'profit' ? 'ring-2 ring-nihal-yellow' : ''}`}
               onClick={() => setReportType('profit')}>
           <div className="p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Profit Report</h3>
-              <DollarSign className="text-yellow-500" size={24} />
+              <h3 className="text-lg font-medium text-nihal-blue">Profit Report</h3>
+              <DollarSign className="text-nihal-blue" size={24} />
             </div>
             <p className="text-sm text-gray-600 mt-2">View profit margins and sales performance</p>
           </div>
@@ -565,28 +567,28 @@ const ReportsPage: React.FC = () => {
             <div className="mt-3 md:mt-0 flex flex-wrap gap-2">
               <Button 
                 size="sm" 
-                variant={dateRange === 'today' ? 'primary' : 'secondary'}
+                className={dateRange === 'today' ? 'bg-nihal-yellow text-blue' : 'bg-blue text-nihal-blue border border-nihal-yellow hover:bg-nihal-yellow hover:text-white'}
                 onClick={() => handleDateRangeChange('today')}
               >
                 Today
               </Button>
               <Button 
                 size="sm" 
-                variant={dateRange === 'week' ? 'primary' : 'secondary'}
+                className={dateRange === 'week' ? 'bg-nihal-yellow text-blue' : 'bg-blue text-nihal-blue border border-nihal-yellow hover:bg-nihal-yellow hover:text-white'}
                 onClick={() => handleDateRangeChange('week')}
               >
                 Last 7 Days
               </Button>
               <Button 
                 size="sm" 
-                variant={dateRange === 'month' ? 'primary' : 'secondary'}
+                className={dateRange === 'month' ? 'bg-nihal-yellow text-white' : 'bg-white text-nihal-blue border border-nihal-yellow hover:bg-nihal-yellow hover:text-white'}
                 onClick={() => handleDateRangeChange('month')}
               >
                 Last 30 Days
               </Button>
               <Button 
                 size="sm" 
-                variant={dateRange === 'custom' ? 'primary' : 'secondary'}
+                className={dateRange === 'custom' ? 'bg-nihal-yellow text-blue' : 'bg-blue text-nihal-blue border border-nihal-yellow hover:bg-nihal-yellow hover:text-white'}
                 onClick={() => handleDateRangeChange('custom')}
               >
                 Custom
