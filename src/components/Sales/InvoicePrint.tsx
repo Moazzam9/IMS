@@ -11,16 +11,21 @@ interface InvoicePrintProps {
   customer: Customer | undefined;
   products: Product[];
   onClose: () => void;
+  isLoading?: boolean;
 }
 
 const InvoicePrint: React.FC<InvoicePrintProps> = ({
   sale,
   customer,
   products,
-  onClose
+  onClose,
+  isLoading = false
 }) => {
+  console.log('InvoicePrint received sale data:', sale);
+  console.log('Sale items:', sale.items);
+  console.log('Sale items with old battery data:', sale.items.filter(item => item.oldBatteryData));
   const invoiceRef = useRef<HTMLDivElement>(null);
-  
+
   // Get company information and print settings from utility functions
   const companyInfo = getCompanyInfo();
   const printSettings = getPrintSettings();
@@ -44,7 +49,7 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
   // Handle print function
   const handlePrint = useCallback(() => {
     console.log('Print function called');
-    
+
     // Always use browser printing to ensure it works
     console.log('Using browser printing');
     if (reactToPrint) {
@@ -73,7 +78,7 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
   const totalOldBatteryDeductions = sale.items
     .filter(item => item.oldBatteryData)
     .reduce((total, item) => {
-      const deductionAmount = item.oldBatteryData ? 
+      const deductionAmount = item.oldBatteryData ?
         item.oldBatteryData.weight * item.oldBatteryData.ratePerKg : 0;
       return total + deductionAmount;
     }, 0);
@@ -84,8 +89,8 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold">Invoice #{sale.invoiceNumber}</h2>
           <div className="flex space-x-2">
-            <Button 
-              icon={Printer} 
+            <Button
+              icon={Printer}
               onClick={() => {
                 console.log('Print Invoice button clicked in InvoicePrint');
                 handlePrint();
@@ -98,121 +103,128 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
         </div>
 
         <div className="overflow-auto p-6">
-          <div ref={invoiceRef} className="p-8 bg-white">
-            {/* Invoice Header */}
-            <div className="flex justify-between items-start mb-8">
-              <div>
-                {printSettings.showLogo && companyInfo.logo && (
-                  <img
-                    src={companyInfo.logo}
-                    alt="Company Logo"
-                    className="h-16 mb-2"
-                  />
-                )}
-                <h1 className="text-2xl font-bold text-gray-800">{companyInfo.name}</h1>
-                <p className="text-gray-600 whitespace-pre-line">{companyInfo.address}</p>
-                <p className="text-gray-600">{companyInfo.email}</p>
-                <p className="text-gray-600">{companyInfo.website}</p>
-                {printSettings.showTaxId && (
-                  <>
-                    <p className="text-gray-600">NTN: {companyInfo.ntn}</p>
-                    <p className="text-gray-600">STRN: {companyInfo.strn}</p>
-                    <p className="text-gray-600">PH: {companyInfo.phone}</p>
-                    <p className="text-gray-600">Cell: {companyInfo.cell}</p>
-                  </>
-                )}
-              </div>
-
-              <div className="text-right">
-                <h2 className="text-xl font-bold text-gray-800 mb-2">INVOICE</h2>
-                <p className="text-gray-600"><span className="font-medium">Invoice #:</span> {sale.invoiceNumber}</p>
-                <p className="text-gray-600"><span className="font-medium">Date:</span> {new Date(sale.saleDate).toLocaleDateString()}</p>
-                <p className="text-gray-600"><span className="font-medium">Time:</span> {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
-                <p className="text-gray-600"><span className="font-medium">Status:</span> {sale.status.charAt(0).toUpperCase() + sale.status.slice(1)}</p>
-              </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-gray-600">Loading invoice data...</span>
             </div>
-
-            {/* Customer Information */}
-            <div className="mb-8 p-4 bg-gray-50 rounded-md">
-              <h2 className="text-lg font-bold text-gray-800 mb-2">Customer Information</h2>
-              <p className="text-gray-700"><span className="font-medium">Name:</span> {sale.customerName || customer?.name || 'Walk-in Customer'}</p>
-              {customer?.address && (
-                <p className="text-gray-700"><span className="font-medium">Address:</span> {customer.address}</p>
-              )}
-              {customer?.phone && (
-                <p className="text-gray-700"><span className="font-medium">Phone:</span> {customer.phone}</p>
-              )}
-              {customer?.email && (
-                <p className="text-gray-700"><span className="font-medium">Email:</span> {customer.email}</p>
-              )}
-              {sale.salesperson && (
-                <p className="text-gray-700"><span className="font-medium">Salesperson:</span> {sale.salesperson}</p>
-              )}
-            </div>
-
-            {/* Invoice Items */}
-            <table className="w-full mb-8">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="py-2 px-4 text-left border-b">Item</th>
-                  <th className="py-2 px-4 text-right border-b">Qty</th>
-                  <th className="py-2 px-4 text-right border-b">Unit Price</th>
-                  <th className="py-2 px-4 text-right border-b">Discount</th>
-                  <th className="py-2 px-4 text-right border-b">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sale.items.map((item, index) => {
-                  const product = getProductDetails(item);
-                  return (
-                    <tr key={index} className="border-b">
-                      <td className="py-2 px-4">
-                        <div className="font-medium">{product?.name || 'Unknown Product'}</div>
-                        <div className="text-sm text-gray-600">{product?.code || ''}</div>
-                      </td>
-                      <td className="py-2 px-4 text-right">{item.quantity} {product?.unit || ''}</td>
-                      <td className="py-2 px-4 text-right">₨{item.salePrice.toFixed(2)}</td>
-                      <td className="py-2 px-4 text-right">₨{(item.discount || 0).toFixed(2)}</td>
-                      <td className="py-2 px-4 text-right">₨{item.total.toFixed(2)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            {/* Invoice Summary */}
-            <div className="flex justify-end mb-8">
-              <div className="w-64">
-                <div className="flex justify-between py-2">
-                  <span className="font-medium">Subtotal:</span>
-                  <span>₨{sale.totalAmount.toFixed(2)}</span>
+          ) : (
+            <div ref={invoiceRef} className="p-8 bg-white">
+              {/* Invoice Header */}
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  {printSettings.showLogo && companyInfo.logo && (
+                    <img
+                      src={companyInfo.logo}
+                      alt="Company Logo"
+                      className="h-16 mb-2"
+                    />
+                  )}
+                  <h1 className="text-2xl font-bold text-gray-800">{companyInfo.name}</h1>
+                  <p className="text-gray-600 whitespace-pre-line">{companyInfo.address}</p>
+                  <p className="text-gray-600">{companyInfo.email}</p>
+                  <p className="text-gray-600">{companyInfo.website}</p>
+                  {printSettings.showTaxId && (
+                    <>
+                      <p className="text-gray-600">NTN: {companyInfo.ntn}</p>
+                      <p className="text-gray-600">STRN: {companyInfo.strn}</p>
+                      <p className="text-gray-600">PH: {companyInfo.phone}</p>
+                      <p className="text-gray-600">Cell: {companyInfo.cell}</p>
+                    </>
+                  )}
                 </div>
-                {(sale.discount - totalOldBatteryDeductions) > 0 && (
+
+                <div className="text-right">
+                  <h2 className="text-xl font-bold text-gray-800 mb-2">INVOICE</h2>
+                  <p className="text-gray-600"><span className="font-medium">Invoice #:</span> {sale.invoiceNumber}</p>
+                  <p className="text-gray-600"><span className="font-medium">Date:</span> {new Date(sale.saleDate).toLocaleDateString()}</p>
+                  <p className="text-gray-600"><span className="font-medium">Time:</span> {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+                  <p className="text-gray-600"><span className="font-medium">Status:</span> {sale.status.charAt(0).toUpperCase() + sale.status.slice(1)}</p>
+                </div>
+              </div>
+
+              {/* Customer Information */}
+              <div className="mb-8 p-4 bg-gray-50 rounded-md">
+                <h2 className="text-lg font-bold text-gray-800 mb-2">Customer Information</h2>
+                <p className="text-gray-700"><span className="font-medium">Name:</span> {sale.customerName || customer?.name || 'Walk-in Customer'}</p>
+                {customer?.address && (
+                  <p className="text-gray-700"><span className="font-medium">Address:</span> {customer.address}</p>
+                )}
+                {customer?.phone && (
+                  <p className="text-gray-700"><span className="font-medium">Phone:</span> {customer.phone}</p>
+                )}
+                {customer?.email && (
+                  <p className="text-gray-700"><span className="font-medium">Email:</span> {customer.email}</p>
+                )}
+                {sale.salesperson && (
+                  <p className="text-gray-700"><span className="font-medium">Salesperson:</span> {sale.salesperson}</p>
+                )}
+              </div>
+
+              {/* Invoice Items */}
+              <table className="w-full mb-8">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="py-2 px-4 text-left border-b">Item</th>
+                    <th className="py-2 px-4 text-right border-b">Qty</th>
+                    <th className="py-2 px-4 text-right border-b">Unit Price</th>
+                    <th className="py-2 px-4 text-right border-b">Discount</th>
+                    <th className="py-2 px-4 text-right border-b">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sale.items.map((item, index) => {
+                    const product = getProductDetails(item);
+                    return (
+                      <tr key={index} className="border-b">
+                        <td className="py-2 px-4">
+                          <div className="font-medium">{product?.name || 'Unknown Product'}</div>
+                          <div className="text-sm text-gray-600">{product?.code || ''}</div>
+                        </td>
+                        <td className="py-2 px-4 text-right">{item.quantity} {product?.unit || ''}</td>
+                        <td className="py-2 px-4 text-right">₨{item.salePrice.toFixed(2)}</td>
+                        <td className="py-2 px-4 text-right">₨{(item.discount || 0).toFixed(2)}</td>
+                        <td className="py-2 px-4 text-right">₨{item.total.toFixed(2)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {/* Invoice Summary */}
+              <div className="flex justify-end mb-8">
+                <div className="w-64">
                   <div className="flex justify-between py-2">
-                    <span className="font-medium">Regular Discount:</span>
-                    <span>₨{(sale.discount - totalOldBatteryDeductions).toFixed(2)}</span>
+                    <span className="font-medium">Subtotal:</span>
+                    <span>₨{sale.totalAmount.toFixed(2)}</span>
                   </div>
-                )}
-                {totalOldBatteryDeductions > 0 && (
-                  <div className="flex justify-between py-2 text-green-600">
-                    <span className="font-medium">Old Battery Deduction:</span>
-                    <span>₨{totalOldBatteryDeductions.toFixed(2)}</span>
+                  {(sale.discount - totalOldBatteryDeductions) > 0 && (
+                    <div className="flex justify-between py-2">
+                      <span className="font-medium">Regular Discount:</span>
+                      <span>₨{(sale.discount - totalOldBatteryDeductions).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {totalOldBatteryDeductions > 0 && (
+                    <div className="flex justify-between py-2 text-green-600">
+                      <span className="font-medium">Old Battery Deduction:</span>
+                      <span>₨{totalOldBatteryDeductions.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between py-2 border-t border-b font-bold">
+                    <span>Total:</span>
+                    <span>₨{(sale.netAmount || sale.totalAmount).toFixed(2)}</span>
                   </div>
-                )}
-                <div className="flex justify-between py-2 border-t border-b font-bold">
-                  <span>Total:</span>
-                  <span>₨{(sale.netAmount || sale.totalAmount).toFixed(2)}</span>
                 </div>
               </div>
-            </div>
 
-            {/* Removed payment information and signatures as requested */}
+              {/* Removed payment information and signatures as requested */}
 
-            {/* Footer */}
-            <div className="text-center text-gray-600 text-sm mt-8">
-              <p>{printSettings.footerText}</p>
+              {/* Footer */}
+              <div className="text-center text-gray-600 text-sm mt-8">
+                <p>{printSettings.footerText}</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

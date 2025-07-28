@@ -60,20 +60,18 @@ export class OldBatteryService {
     try {
       const oldBatteriesRef = ref(database, `users/${userId}/oldBatteries`);
       const snapshot = await get(oldBatteriesRef);
-      const oldBatteries: OldBattery[] = [];
-
-      if (snapshot.exists()) {
-        snapshot.forEach((childSnapshot) => {
-          const oldBattery = childSnapshot.val();
-          if (oldBattery.saleId === saleId) {
-            oldBatteries.push({
-              ...oldBattery,
-              id: childSnapshot.key
-            });
-          }
-        });
-      }
-
+      const data = snapshot.val();
+      
+      const oldBatteries: OldBattery[] = data 
+        ? Object.entries(data)
+            .filter(([_, oldBattery]) => (oldBattery as any).saleId === saleId)
+            .map(([id, oldBattery]) => ({ 
+              id, 
+              ...(oldBattery as Omit<OldBattery, 'id'>) 
+            }))
+        : [];
+      
+      console.log(`Found ${oldBatteries.length} old batteries for sale ${saleId}:`, oldBatteries);
       return oldBatteries;
     } catch (error) {
       console.error('Error getting old batteries by sale ID:', error);

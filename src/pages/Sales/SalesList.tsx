@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -17,7 +17,7 @@ import { FirebaseService } from '../../services/firebase';
 import { OldBatteryService } from '../../services/oldBatteryService';
 
 const SalesList: React.FC = () => {
-  const { sales, customers, products, loading, addSale, updateSale, deleteSale } = useApp();
+  const { sales, customers, products, loading, addSale, updateSale, deleteSale, getSaleItems } = useApp();
   const { user } = useAuth();
   const userId = user?.firebaseUid;
   const { showToast } = useToast();
@@ -25,26 +25,28 @@ const SalesList: React.FC = () => {
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSaleForPrint, setSelectedSaleForPrint] = useState<Sale | null>(null);
+  const [isLoadingInvoice, setIsLoadingInvoice] = useState(false);
+  const isClosingRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFilter, setSearchFilter] = useState('invoiceNumber');
-  
+
   // Filter sales based on search term and filter
   const filteredSales = useMemo(() => {
     if (!searchTerm) return sales;
-    
+
     return sales.filter(sale => {
       // Special case for customer name search
       if (searchFilter === 'customerName') {
         const customer = customers.find(c => c.id === sale.customerId);
         return customer && customer.name.toLowerCase().includes(searchTerm.toLowerCase());
       }
-      
+
       // Special case for date search
       if (searchFilter === 'saleDate') {
         const date = new Date(sale.saleDate).toLocaleDateString();
         return date.includes(searchTerm);
       }
-      
+
       const value = sale[searchFilter as keyof Sale];
       if (typeof value === 'string') {
         return value.toLowerCase().includes(searchTerm.toLowerCase());
@@ -54,13 +56,26 @@ const SalesList: React.FC = () => {
       return false;
     });
   }, [sales, searchTerm, searchFilter, customers]);
-  
+
   // Monitor selectedSaleForPrint changes
   useEffect(() => {
-    if (selectedSaleForPrint) {
-      console.log('selectedSaleForPrint updated:', selectedSaleForPrint);
-    }
+    console.log('selectedSaleForPrint state changed:', selectedSaleForPrint ? `Sale ID: ${selectedSaleForPrint.id}` : 'null');
   }, [selectedSaleForPrint]);
+
+  // Monitor filtered sales changes
+  useEffect(() => {
+    console.log('Filtered sales updated:', filteredSales.length, 'sales');
+  }, [filteredSales]);
+
+  // Cleanup effect to reset invoice state when component unmounts or user changes
+  useEffect(() => {
+    return () => {
+      setSelectedSaleForPrint(null);
+      setIsLoadingInvoice(false);
+    };
+  }, []);
+
+  // Removed the problematic useEffect that was causing the invoice to reappear
   const [formData, setFormData] = useState({
     invoiceNumber: '',
     customerId: '',
@@ -70,7 +85,7 @@ const SalesList: React.FC = () => {
     discount: 0,
     status: 'completed' as 'completed' | 'returned'
   });
-  
+
   // Generate sequential invoice number when modal opens
   useEffect(() => {
     if (isModalOpen && !editingSale) {
@@ -79,7 +94,7 @@ const SalesList: React.FC = () => {
         const currentNumber = parseInt(sale.invoiceNumber);
         return isNaN(currentNumber) ? highest : Math.max(highest, currentNumber);
       }, 0);
-      
+
       setFormData(prev => ({
         ...prev,
         invoiceNumber: (highestInvoiceNumber + 1).toString()
@@ -92,7 +107,7 @@ const SalesList: React.FC = () => {
   const calculateTotalDiscount = (items: Omit<SaleItem, 'id' | 'saleId'>[]) => {
     return items.reduce((sum, item) => sum + (item.discount || 0), 0);
   };
-  
+
   // Update item totals when they change
   useEffect(() => {
     if (saleItems.length > 0) {
@@ -121,7 +136,7 @@ const SalesList: React.FC = () => {
     }
 
     // Validate sale items data
-    const invalidSaleItem = saleItems.find(item => 
+    const invalidSaleItem = saleItems.find(item =>
       !item.productId ||
       !item.quantity ||
       !item.salePrice ||
@@ -134,7 +149,7 @@ const SalesList: React.FC = () => {
     }
 
     // Validate old battery data
-    const invalidOldBatteryItem = saleItems.find(item => 
+    const invalidOldBatteryItem = saleItems.find(item =>
       item.oldBatteryData && (
         !item.oldBatteryData.name ||
         !item.oldBatteryData.weight ||
@@ -147,9 +162,9 @@ const SalesList: React.FC = () => {
       showToast('Please fill in all old battery details correctly', 'error');
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       if (!userId) {
         throw new Error('User authentication required');
@@ -164,7 +179,7 @@ const SalesList: React.FC = () => {
       }, 0);
       const netAmount = totalAmount - totalDiscount;
       const totalItems = saleItems.reduce((sum, item) => sum + item.quantity, 0);
-      
+
       // Validate sale items before creating sale data
       if (!saleItems || saleItems.length === 0) {
         throw new Error('Sale must include at least one item');
@@ -176,8 +191,8 @@ const SalesList: React.FC = () => {
           throw new Error(`Invalid data for sale item ${index + 1}`);
         }
         if (item.oldBatteryData) {
-          if (!item.oldBatteryData.name || !item.oldBatteryData.weight || 
-              !item.oldBatteryData.ratePerKg || typeof item.oldBatteryData.deductionAmount !== 'number') {
+          if (!item.oldBatteryData.name || !item.oldBatteryData.weight ||
+            !item.oldBatteryData.ratePerKg || typeof item.oldBatteryData.deductionAmount !== 'number') {
             throw new Error(`Invalid old battery data for item ${index + 1}`);
           }
         }
@@ -207,8 +222,8 @@ const SalesList: React.FC = () => {
 
           // Only include oldBatteryData if it exists and has all required fields
           if (item.oldBatteryData) {
-            if (!item.oldBatteryData.name || !item.oldBatteryData.weight || 
-                !item.oldBatteryData.ratePerKg || typeof item.oldBatteryData.deductionAmount !== 'number') {
+            if (!item.oldBatteryData.name || !item.oldBatteryData.weight ||
+              !item.oldBatteryData.ratePerKg || typeof item.oldBatteryData.deductionAmount !== 'number') {
               throw new Error('Invalid old battery data');
             }
             saleItem.oldBatteryData = {
@@ -222,88 +237,90 @@ const SalesList: React.FC = () => {
           return saleItem;
         })
       };
-      
+
       let saleId;
-      
+
       if (editingSale) {
         // Update existing sale
         await updateSale(editingSale.id, saleData);
         saleId = editingSale.id;
-        
+
         // Delete existing items to replace with new ones
         const saleItemsRef = ref(database, `users/${userId}/saleItems/${saleId}`);
         await remove(saleItemsRef);
-        
+
         // Delete existing old batteries associated with this sale
         const existingOldBatteries = await OldBatteryService.getOldBatteriesBySaleId(saleId, userId);
         for (const oldBattery of existingOldBatteries) {
           await OldBatteryService.deleteOldBattery(oldBattery.id, userId);
         }
-      } else {
-        // Add new sale
-        saleId = await addSale(saleData);
-      }
-      
-      try {
-        // Add sale items and old batteries
-        const saleItemsRef = ref(database, `users/${userId}/saleItems/${saleId}`);
-        
-        // First, save all sale items and collect their IDs
-        const savedItems = await Promise.all(saleItems.map(async (item) => {
-          const newItemRef = push(saleItemsRef);
-          const saleItemId = newItemRef.key!;
-          
-          if (!item.productId || !item.quantity || !item.salePrice || typeof item.total !== 'number') {
-            throw new Error('Invalid sale item data');
-          }
 
-          const itemData = {
-            id: saleItemId,
-            saleId,
-            productId: item.productId,
-            quantity: item.quantity,
-            salePrice: item.salePrice,
-            discount: item.discount || 0,
-            total: item.total,
-            includeOldBattery: !!item.oldBatteryData,
-            createdAt: new Date().toISOString()
-          };
-          
-          // Add sale item
-          await set(newItemRef, itemData);
-          return { saleItemId, item };
-        }));
+        // Save new sale items and old batteries for editing
+        try {
+          // Add sale items and old batteries
+          const saleItemsRef = ref(database, `users/${userId}/saleItems/${saleId}`);
 
-        // Then, save all old battery data
-        const oldBatteryPromises = savedItems
-          .filter(({ item }) => item.oldBatteryData)
-          .map(async ({ saleItemId, item }) => {
-            if (!item.oldBatteryData?.name || !item.oldBatteryData?.weight || 
-                !item.oldBatteryData?.ratePerKg || typeof item.oldBatteryData?.deductionAmount !== 'number') {
-              throw new Error('Invalid old battery data');
+          // First, save all sale items and collect their IDs
+          const savedItems = await Promise.all(saleItems.map(async (item) => {
+            const newItemRef = push(saleItemsRef);
+            const saleItemId = newItemRef.key!;
+
+            if (!item.productId || !item.quantity || !item.salePrice || typeof item.total !== 'number') {
+              throw new Error('Invalid sale item data');
             }
 
-            const oldBatteryData = {
-              name: item.oldBatteryData.name,
-              weight: item.oldBatteryData.weight,
-              ratePerKg: item.oldBatteryData.ratePerKg,
-              deductionAmount: item.oldBatteryData.deductionAmount,
+            const itemData = {
+              id: saleItemId,
               saleId,
-              saleItemId
+              productId: item.productId,
+              quantity: item.quantity,
+              salePrice: item.salePrice,
+              discount: item.discount || 0,
+              total: item.total,
+              includeOldBattery: !!item.oldBatteryData,
+              createdAt: new Date().toISOString()
             };
-            await OldBatteryService.addOldBattery(oldBatteryData, userId);
-          });
 
-        await Promise.all(oldBatteryPromises);
-      } catch (error) {
-        console.error('Error saving sale items:', error);
-        // Delete the sale if saving items fails
-        await deleteSale(saleId);
-        throw new Error('Failed to save sale items and old battery data');
+            // Add sale item
+            await set(newItemRef, itemData);
+            return { saleItemId, item };
+          }));
+
+          // Then, save all old battery data
+          const oldBatteryPromises = savedItems
+            .filter(({ item }) => item.oldBatteryData)
+            .map(async ({ saleItemId, item }) => {
+              if (!item.oldBatteryData?.name || !item.oldBatteryData?.weight ||
+                !item.oldBatteryData?.ratePerKg || typeof item.oldBatteryData?.deductionAmount !== 'number') {
+                throw new Error('Invalid old battery data');
+              }
+
+              const oldBatteryData = {
+                name: item.oldBatteryData.name,
+                weight: item.oldBatteryData.weight,
+                ratePerKg: item.oldBatteryData.ratePerKg,
+                deductionAmount: item.oldBatteryData.deductionAmount,
+                saleId,
+                saleItemId
+              };
+              await OldBatteryService.addOldBattery(oldBatteryData, userId);
+            });
+
+          await Promise.all(oldBatteryPromises);
+        } catch (error) {
+          console.error('Error saving sale items:', error);
+          throw new Error('Failed to save sale items and old battery data');
+        }
+      } else {
+        // Add new sale - FirebaseService.addSale already handles saving items and old batteries
+        console.log('Saving sale data:', saleData);
+        saleId = await addSale(saleData);
+        console.log('Sale saved with ID:', saleId);
       }
-      
+
       setIsModalOpen(false);
       setEditingSale(null);
+      setSelectedSaleForPrint(null); // Clear selected sale for print
       setFormData({
         invoiceNumber: '',
         customerId: '',
@@ -314,6 +331,14 @@ const SalesList: React.FC = () => {
         status: 'completed'
       });
       setSaleItems([]);
+
+      // Show success message
+      showToast(
+        editingSale
+          ? 'Sale updated successfully!'
+          : 'Sale added successfully!',
+        'success'
+      );
     } catch (error) {
       console.error('Error saving sale:', error);
       showToast('Error saving sale. Please try again.', 'error');
@@ -322,7 +347,7 @@ const SalesList: React.FC = () => {
     setIsSubmitting(false);
   };
 
-  const handleEdit = (sale: Sale) => {
+  const handleEdit = async (sale: Sale) => {
     setEditingSale(sale);
     setFormData({
       invoiceNumber: sale.invoiceNumber,
@@ -333,15 +358,25 @@ const SalesList: React.FC = () => {
       discount: sale.discount,
       status: sale.status
     });
-    
-    // Ensure each item has a discount value
-    const itemsWithDiscounts = (sale.items || []).map(item => ({
-      ...item,
-      discount: item.discount || 0,
-      total: (item.quantity * item.salePrice) - (item.discount || 0)
-    }));
-    
-    setSaleItems(itemsWithDiscounts);
+
+    try {
+      // Load sale items for this sale
+      const saleItems = await getSaleItems(sale.id);
+      console.log('Loaded sale items for editing:', saleItems);
+
+      // Ensure each item has a discount value
+      const itemsWithDiscounts = saleItems.map(item => ({
+        ...item,
+        discount: item.discount || 0,
+        total: (item.quantity * item.salePrice) - (item.discount || 0)
+      }));
+
+      setSaleItems(itemsWithDiscounts);
+    } catch (error) {
+      console.error('Error loading sale items for editing:', error);
+      setSaleItems([]);
+    }
+
     setIsModalOpen(true);
   };
 
@@ -349,6 +384,7 @@ const SalesList: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this sale?')) {
       try {
         await deleteSale(saleId);
+        showToast('Sale deleted successfully!', 'success');
       } catch (error) {
         console.error('Error deleting sale:', error);
         showToast('Error deleting sale. Please try again.', 'error');
@@ -364,52 +400,52 @@ const SalesList: React.FC = () => {
       discount: 0,
       total: 0
     };
-    
+
     setSaleItems([...saleItems, newItem]);
   };
-  
-  const handleOldBatteryChange = (index: number, oldBatteryData: {
+
+  const handleOldBatteryChange = useCallback((index: number, oldBatteryData: {
     name: string;
     weight: number;
     ratePerKg: number;
     deductionAmount: number;
   } | null) => {
     const updatedItems = [...saleItems];
-    
+
     if (oldBatteryData) {
       updatedItems[index].oldBatteryData = oldBatteryData;
-      
+
       // Recalculate total with old battery deduction
       const subtotal = updatedItems[index].quantity * updatedItems[index].salePrice;
       updatedItems[index].total = subtotal - (updatedItems[index].discount || 0) - oldBatteryData.deductionAmount;
     } else {
       // Remove old battery data and recalculate total without deduction
       delete updatedItems[index].oldBatteryData;
-      
+
       const subtotal = updatedItems[index].quantity * updatedItems[index].salePrice;
       updatedItems[index].total = subtotal - (updatedItems[index].discount || 0);
     }
-    
+
     setSaleItems(updatedItems);
-  };
+  }, [saleItems]);
 
   const updateSaleItem = (index: number, field: string, value: any) => {
     const updatedItems = [...saleItems];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
-    
+
     // If product is selected, automatically set the sale price
     if (field === 'productId' && value) {
       const selectedProduct = products.find(p => p.id === value);
       if (selectedProduct) {
         updatedItems[index].salePrice = selectedProduct.salePrice;
-        
+
         // Recalculate total after setting the sale price
         const subtotal = updatedItems[index].quantity * selectedProduct.salePrice;
         const oldBatteryDeduction = updatedItems[index].oldBatteryData?.deductionAmount || 0;
         updatedItems[index].total = subtotal - (updatedItems[index].discount || 0) - oldBatteryDeduction;
       }
     }
-    
+
     // Calculate total for the item
     if (field === 'quantity' || field === 'salePrice' || field === 'discount') {
       const item = updatedItems[index];
@@ -417,19 +453,19 @@ const SalesList: React.FC = () => {
       const subtotal = item.quantity * item.salePrice;
       const oldBatteryDeduction = item.oldBatteryData?.deductionAmount || 0;
       updatedItems[index].total = subtotal - (item.discount || 0) - oldBatteryDeduction;
-      
+
       // Update the overall discount to be the sum of individual discounts
       const totalDiscount = updatedItems.reduce((sum, item) => sum + (item.discount || 0), 0);
       setFormData(prev => ({ ...prev, discount: totalDiscount }));
     }
-    
+
     setSaleItems(updatedItems);
   };
 
   const removeSaleItem = (index: number) => {
     const updatedItems = saleItems.filter((_, i) => i !== index);
     setSaleItems(updatedItems);
-    
+
     // Update the overall discount to be the sum of individual discounts
     const totalDiscount = updatedItems.reduce((sum, item) => sum + (item.discount || 0), 0);
     setFormData(prev => ({ ...prev, discount: totalDiscount }));
@@ -437,8 +473,8 @@ const SalesList: React.FC = () => {
 
   const columns = [
     { key: 'invoiceNumber', label: 'Invoice #' },
-    { 
-      key: 'customerId', 
+    {
+      key: 'customerId',
       label: 'Customer',
       render: (value: string) => {
         if (!value) return 'Walk-in Customer';
@@ -446,34 +482,33 @@ const SalesList: React.FC = () => {
         return customer ? customer.name : 'Unknown';
       }
     },
-    { 
-      key: 'saleDate', 
+    {
+      key: 'saleDate',
       label: 'Date',
       render: (value: string) => new Date(value).toLocaleDateString()
     },
-    { 
-      key: 'totalAmount', 
+    {
+      key: 'totalAmount',
       label: 'Total',
       render: (value: number) => `₨${value.toFixed(2)}`
     },
-    { 
-      key: 'discount', 
+    {
+      key: 'discount',
       label: 'Discount',
       render: (value: number) => `₨${value.toFixed(2)}`
     },
-    { 
-      key: 'netAmount', 
+    {
+      key: 'netAmount',
       label: 'Net Amount',
       render: (value: number) => `₨${value.toFixed(2)}`
     },
     { key: 'totalItems', label: 'Items' },
-    { 
-      key: 'status', 
+    {
+      key: 'status',
       label: 'Status',
       render: (value: string) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          value === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${value === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
           {value.charAt(0).toUpperCase() + value.slice(1)}
         </span>
       )
@@ -498,14 +533,44 @@ const SalesList: React.FC = () => {
             <Trash2 size={16} />
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
+              if (isClosingRef.current) {
+                console.log('Preventing print while closing');
+                return;
+              }
+
               console.log('Print button clicked for sale:', sale);
-              setSelectedSaleForPrint(sale);
+              setIsLoadingInvoice(true);
+
+              // Get the latest sale data with items and old battery data
+              try {
+                const saleItems = await getSaleItems(sale.id);
+                console.log('Loaded sale items for printing:', saleItems);
+
+                const saleWithItems = {
+                  ...sale,
+                  items: saleItems
+                };
+
+                setSelectedSaleForPrint(saleWithItems);
+              } catch (error) {
+                console.error('Error loading sale items for printing:', error);
+                // Fallback to current sale data
+                const latestSale = sales.find(s => s.id === sale.id);
+                setSelectedSaleForPrint(latestSale || sale);
+              } finally {
+                setIsLoadingInvoice(false);
+              }
             }}
             className="text-green-600 hover:text-green-800"
             title="Print Invoice"
+            disabled={isLoadingInvoice}
           >
-            <Printer size={16} />
+            {isLoadingInvoice ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+            ) : (
+              <Printer size={16} />
+            )}
           </button>
         </div>
       )
@@ -544,7 +609,11 @@ const SalesList: React.FC = () => {
             <span className="ml-2 text-gray-600">Loading sales...</span>
           </div>
         ) : (
-          <Table columns={columns} data={filteredSales} />
+          <Table
+            key={`sales-${filteredSales.length}`}
+            columns={columns}
+            data={filteredSales}
+          />
         )}
       </Card>
 
@@ -599,7 +668,7 @@ const SalesList: React.FC = () => {
               </select>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -674,7 +743,7 @@ const SalesList: React.FC = () => {
                 Add Item
               </Button>
             </div>
-            
+
             <div className="space-y-3">
               {/* Column Headers */}
               <div className="grid grid-cols-6 gap-3 p-2 bg-gray-200 rounded-lg font-medium text-sm">
@@ -685,7 +754,7 @@ const SalesList: React.FC = () => {
                 <div>Total</div>
                 <div></div>
               </div>
-              
+
               {saleItems.map((item, index) => (
                 <div key={index} className="grid grid-cols-6 gap-3 p-3 bg-gray-50 rounded-lg">
                   <div className="flex flex-col">
@@ -702,7 +771,7 @@ const SalesList: React.FC = () => {
                         </option>
                       ))}
                     </select>
-                    
+
                     {/* Show old battery form under item name for battery products */}
                     {item.productId && products.find(p => p.id === item.productId)?.isBattery && (
                       <div className="mt-2 flex items-center">
@@ -720,10 +789,10 @@ const SalesList: React.FC = () => {
                         </button>
                       </div>
                     )}
-                    
+
                     {item.oldBatteryData && (
                       <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
-                        <OldBatteryForm 
+                        <OldBatteryForm
                           enabled={true}
                           initialData={item.oldBatteryData}
                           onOldBatteryChange={(data) => handleOldBatteryChange(index, data)}
@@ -812,8 +881,8 @@ const SalesList: React.FC = () => {
               Cancel
             </Button>
             <Button type="submit" icon={TrendingUp} disabled={isSubmitting}>
-              {isSubmitting 
-                ? (editingSale ? 'Updating...' : 'Adding...') 
+              {isSubmitting
+                ? (editingSale ? 'Updating...' : 'Adding...')
                 : (editingSale ? 'Update Sale' : 'Add Sale')
               }
             </Button>
@@ -821,12 +890,24 @@ const SalesList: React.FC = () => {
         </form>
       </Modal>
 
-      {selectedSaleForPrint && (
+      {selectedSaleForPrint && selectedSaleForPrint.id && (
         <InvoicePrint
+          key={`invoice-${selectedSaleForPrint.id}-${selectedSaleForPrint.items?.length || 0}`}
           sale={selectedSaleForPrint}
           customer={customers.find(c => c.id === selectedSaleForPrint.customerId)}
           products={products}
-          onClose={() => setSelectedSaleForPrint(null)}
+          onClose={() => {
+            console.log('Closing invoice print - clearing state');
+            isClosingRef.current = true;
+            setSelectedSaleForPrint(null);
+            setIsLoadingInvoice(false);
+            // Reset the closing flag after a short delay
+            setTimeout(() => {
+              isClosingRef.current = false;
+              console.log('State cleared, selectedSaleForPrint should be null');
+            }, 200);
+          }}
+          isLoading={isLoadingInvoice}
         />
       )}
     </div>

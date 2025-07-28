@@ -11,54 +11,57 @@ interface AppContextType {
   sales: Sale[];
   stockMovements: StockMovement[];
   loading: boolean;
-  
+
   // CRUD operations
   addProduct: (product: Omit<Product, 'id'>) => Promise<string>;
   updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
-  
+
   addSupplier: (supplier: Omit<Supplier, 'id'>) => Promise<string>;
   updateSupplier: (id: string, supplier: Partial<Supplier>) => Promise<void>;
   deleteSupplier: (id: string) => Promise<void>;
-  
+
   addCustomer: (customer: Omit<Customer, 'id'>) => Promise<string>;
   updateCustomer: (id: string, customer: Partial<Customer>) => Promise<void>;
   deleteCustomer: (id: string) => Promise<void>;
-  
+
   addPurchase: (purchase: Omit<Purchase, 'id'>) => Promise<string>;
   updatePurchase: (id: string, purchase: Partial<Purchase>) => Promise<void>;
   deletePurchase: (id: string) => Promise<void>;
-  
+
   addSale: (sale: Omit<Sale, 'id'>) => Promise<string>;
   updateSale: (id: string, sale: Partial<Sale>) => Promise<void>;
   deleteSale: (id: string) => Promise<void>;
-  
+
   addStockMovement: (stockMovement: Omit<StockMovement, 'id'>) => Promise<string>;
+
+  // Additional functions
+  getSaleItems: (saleId: string) => Promise<SaleItem[]>;
 }
 
-const AppContext = createContext<AppContextType>({ 
-  products: [], 
-  suppliers: [], 
-  customers: [], 
-  purchases: [], 
-  sales: [], 
-  stockMovements: [], 
+const AppContext = createContext<AppContextType>({
+  products: [],
+  suppliers: [],
+  customers: [],
+  purchases: [],
+  sales: [],
+  stockMovements: [],
   loading: true,
   addProduct: async () => '',
-  updateProduct: async () => {},
-  deleteProduct: async () => {},
+  updateProduct: async () => { },
+  deleteProduct: async () => { },
   addSupplier: async () => '',
-  updateSupplier: async () => {},
-  deleteSupplier: async () => {},
+  updateSupplier: async () => { },
+  deleteSupplier: async () => { },
   addCustomer: async () => '',
-  updateCustomer: async () => {},
-  deleteCustomer: async () => {},
+  updateCustomer: async () => { },
+  deleteCustomer: async () => { },
   addPurchase: async () => '',
-  updatePurchase: async () => {},
-  deletePurchase: async () => {},
+  updatePurchase: async () => { },
+  deletePurchase: async () => { },
   addSale: async () => '',
-  updateSale: async () => {},
-  deleteSale: async () => {},
+  updateSale: async () => { },
+  deleteSale: async () => { },
   addStockMovement: async () => ''
 });
 
@@ -73,7 +76,7 @@ export const useApp = () => {
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const userId = user?.firebaseUid || '';
-  
+
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -129,7 +132,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // suppliers,
         // etc.
       };
-      
+
       saveData('appState', stateToSave)
         .catch((error) => {
           console.error('Failed to save data to Electron storage', error);
@@ -157,57 +160,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setLoading(false);
         return;
       }
-      
+
       try {
         // Subscribe to real-time updates with user ID and sort by newest first
         unsubscribeProducts = FirebaseService.subscribeToProducts((products) => {
           // Sort products by createdAt date (newest first)
-          const sortedProducts = [...products].sort((a, b) => 
+          const sortedProducts = [...products].sort((a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
           setProducts(sortedProducts);
         }, userId);
-        
+
         unsubscribeSuppliers = FirebaseService.subscribeToSuppliers((suppliers) => {
           // Sort suppliers by createdAt date (newest first)
-          const sortedSuppliers = [...suppliers].sort((a, b) => 
+          const sortedSuppliers = [...suppliers].sort((a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
           setSuppliers(sortedSuppliers);
         }, userId);
-        
+
         unsubscribeCustomers = FirebaseService.subscribeToCustomers((customers) => {
           // Sort customers by createdAt date (newest first)
-          const sortedCustomers = [...customers].sort((a, b) => 
+          const sortedCustomers = [...customers].sort((a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
           setCustomers(sortedCustomers);
         }, userId);
-        
+
         unsubscribePurchases = FirebaseService.subscribeToPurchases((purchases) => {
           // Sort purchases by createdAt date (newest first)
-          const sortedPurchases = [...purchases].sort((a, b) => 
+          const sortedPurchases = [...purchases].sort((a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
           setPurchases(sortedPurchases);
         }, userId);
-        
+
         unsubscribeSales = FirebaseService.subscribeToSales((sales) => {
+          console.log('Sales data updated:', sales.length, 'sales');
           // Sort sales by createdAt date (newest first)
-          const sortedSales = [...sales].sort((a, b) => 
+          const sortedSales = [...sales].sort((a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
           setSales(sortedSales);
         }, userId);
-        
+
         unsubscribeStockMovements = FirebaseService.subscribeToStockMovements((movements) => {
           // Sort stock movements by createdAt date (newest first)
-          const sortedMovements = [...movements].sort((a, b) => 
+          const sortedMovements = [...movements].sort((a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
           setStockMovements(sortedMovements);
         }, userId);
-        
+
         setLoading(false);
       } catch (error) {
         console.error('Error initializing data:', error);
@@ -232,55 +236,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addProduct = async (product: Omit<Product, 'id'>) => {
     return await FirebaseService.addProduct(product, userId);
   };
-  
+
   const updateProduct = async (id: string, product: Partial<Product>) => {
     await FirebaseService.updateProduct(id, product, userId);
   };
-  
+
   const deleteProduct = async (id: string) => {
     await FirebaseService.deleteProduct(id, userId);
   };
-  
+
   const addSupplier = async (supplier: Omit<Supplier, 'id'>) => {
     return await FirebaseService.addSupplier(supplier, userId);
   };
-  
+
   const updateSupplier = async (id: string, supplier: Partial<Supplier>) => {
     await FirebaseService.updateSupplier(id, supplier, userId);
   };
-  
+
   const deleteSupplier = async (id: string) => {
     await FirebaseService.deleteSupplier(id, userId);
   };
-  
+
   const addCustomer = async (customer: Omit<Customer, 'id'>) => {
     return await FirebaseService.addCustomer(customer, userId);
   };
-  
+
   const updateCustomer = async (id: string, customer: Partial<Customer>) => {
     await FirebaseService.updateCustomer(id, customer, userId);
   };
-  
+
   const deleteCustomer = async (id: string) => {
     await FirebaseService.deleteCustomer(id, userId);
   };
-  
+
   const addPurchase = async (purchase: Omit<Purchase, 'id'>) => {
     return await FirebaseService.addPurchase(purchase, userId);
   };
-  
+
   const updatePurchase = async (id: string, purchase: Partial<Purchase>) => {
     await FirebaseService.updatePurchase(id, purchase, userId);
   };
-  
+
   const deletePurchase = async (id: string) => {
     await FirebaseService.deletePurchase(id, userId);
   };
-  
+
   const addSale = async (sale: Omit<Sale, 'id'>) => {
     // Add the sale to the database
     const saleId = await FirebaseService.addSale(sale, userId);
-    
+
     // Update product stock and create stock movements for each item
     if (sale.status === 'completed') {
       for (const item of sale.items) {
@@ -289,7 +293,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           // Deduct the quantity from product stock
           const newStock = Math.max(0, product.currentStock - item.quantity);
           await updateProduct(product.id, { currentStock: newStock });
-          
+
           // Create stock movement record
           const stockMovement: Omit<StockMovement, 'id'> = {
             productId: product.id,
@@ -300,22 +304,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             date: sale.saleDate,
             createdAt: new Date().toISOString()
           };
-          
+
           await addStockMovement(stockMovement);
         }
       }
     }
-    
+
     return saleId;
   };
-  
+
   const updateSale = async (id: string, sale: Partial<Sale>) => {
     // Get the original sale to compare changes
     const originalSale = sales.find(s => s.id === id);
-    
+
     // Update the sale in the database
     await FirebaseService.updateSale(id, sale, userId);
-    
+
     // Handle stock updates if status is completed and items are provided
     if (sale.status === 'completed' && sale.items && originalSale) {
       // For each item in the updated sale
@@ -323,10 +327,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Find the original item to compare quantities
         const originalItem = originalSale.items.find(item => item.productId === newItem.productId);
         const product = products.find(p => p.id === newItem.productId);
-        
+
         if (product) {
           let quantityDifference = 0;
-          
+
           if (originalItem) {
             // If item existed before, calculate the difference
             quantityDifference = newItem.quantity - originalItem.quantity;
@@ -334,13 +338,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             // If it's a new item, the difference is the full quantity
             quantityDifference = newItem.quantity;
           }
-          
+
           // Only update stock if there's a change in quantity
           if (quantityDifference !== 0) {
             // Update product stock
             const newStock = Math.max(0, product.currentStock - quantityDifference);
             await updateProduct(product.id, { currentStock: newStock });
-            
+
             // Create stock movement record for the difference
             const stockMovement: Omit<StockMovement, 'id'> = {
               productId: product.id,
@@ -351,23 +355,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               date: sale.saleDate || originalSale.saleDate,
               createdAt: new Date().toISOString()
             };
-            
+
             await addStockMovement(stockMovement);
           }
         }
       }
-      
+
       // Check for items that were removed from the sale
       for (const originalItem of originalSale.items) {
         const stillExists = sale.items.some(item => item.productId === originalItem.productId);
-        
+
         if (!stillExists) {
           // Item was removed, return the quantity to stock
           const product = products.find(p => p.id === originalItem.productId);
           if (product) {
             const newStock = product.currentStock + originalItem.quantity;
             await updateProduct(product.id, { currentStock: newStock });
-            
+
             // Create stock movement record for the returned quantity
             const stockMovement: Omit<StockMovement, 'id'> = {
               productId: product.id,
@@ -378,21 +382,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               date: sale.saleDate || originalSale.saleDate,
               createdAt: new Date().toISOString()
             };
-            
+
             await addStockMovement(stockMovement);
           }
         }
       }
     }
   };
-  
+
   const deleteSale = async (id: string) => {
     // Get the sale before deleting it
     const saleToDelete = sales.find(s => s.id === id);
-    
+
     // Delete the sale from the database
     await FirebaseService.deleteSale(id, userId);
-    
+
     // If the sale was completed, return the quantities to stock
     if (saleToDelete && saleToDelete.status === 'completed') {
       for (const item of saleToDelete.items) {
@@ -401,7 +405,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           // Return the quantity to stock
           const newStock = product.currentStock + item.quantity;
           await updateProduct(product.id, { currentStock: newStock });
-          
+
           // Create stock movement record for the returned quantity
           const stockMovement: Omit<StockMovement, 'id'> = {
             productId: product.id,
@@ -412,15 +416,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             date: saleToDelete.saleDate,
             createdAt: new Date().toISOString()
           };
-          
+
           await addStockMovement(stockMovement);
         }
       }
     }
   };
-  
+
   const addStockMovement = async (stockMovement: Omit<StockMovement, 'id'>) => {
     return await FirebaseService.addStockMovement(stockMovement, userId);
+  };
+
+  const getSaleItems = async (saleId: string) => {
+    return await FirebaseService.getSaleItems(saleId, userId);
   };
 
   return (
@@ -447,7 +455,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addSale,
       updateSale,
       deleteSale,
-      addStockMovement
+      addStockMovement,
+      getSaleItems
     }}>
       {children}
     </AppContext.Provider>

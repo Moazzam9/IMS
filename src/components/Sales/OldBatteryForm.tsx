@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Battery } from 'lucide-react';
 
 interface OldBatteryFormProps {
   onOldBatteryChange: (oldBatteryData: {
     name: string;
-  weight: number | null;
-  ratePerKg: number | null;
-  deductionAmount: number;
+    weight: number | null;
+    ratePerKg: number | null;
+    deductionAmount: number;
   } | null) => void;
   enabled: boolean;
   initialData?: {
@@ -44,7 +44,7 @@ const OldBatteryForm: React.FC<OldBatteryFormProps> = ({
     }));
   }, [oldBatteryData.weight, oldBatteryData.ratePerKg]);
 
-  // Notify parent component
+  // Notify parent component when includeOldBattery changes
   useEffect(() => {
     if (includeOldBattery) {
       onOldBatteryChange(oldBatteryData);
@@ -57,20 +57,28 @@ const OldBatteryForm: React.FC<OldBatteryFormProps> = ({
         deductionAmount: 0,
       });
     }
-  }, [includeOldBattery, oldBatteryData, onOldBatteryChange]);
+  }, [includeOldBattery, onOldBatteryChange]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     if (name === 'name') {
-      setOldBatteryData(prev => ({ ...prev, [name]: value }));
+      const newData = { ...oldBatteryData, [name]: value };
+      setOldBatteryData(newData);
+      if (includeOldBattery) {
+        onOldBatteryChange(newData);
+      }
       return;
     }
 
     // Handle numeric fields (weight and ratePerKg)
     const numericValue = value === '' ? null : Number(value);
     if (!isNaN(numericValue as number) || numericValue === null) {
-      setOldBatteryData(prev => ({ ...prev, [name]: numericValue }));
+      const newData = { ...oldBatteryData, [name]: numericValue };
+      setOldBatteryData(newData);
+      if (includeOldBattery) {
+        onOldBatteryChange(newData);
+      }
     }
   };
 
@@ -141,7 +149,11 @@ const OldBatteryForm: React.FC<OldBatteryFormProps> = ({
                 const value = e.target.value.replace(/[^0-9.]/g, '');
                 const numericValue = value === '' ? null : parseFloat(value);
                 if (!isNaN(numericValue as number) || value === '') {
-                  setOldBatteryData(prev => ({ ...prev, ratePerKg: numericValue }));
+                  const newData = { ...oldBatteryData, ratePerKg: numericValue };
+                  setOldBatteryData(newData);
+                  if (includeOldBattery) {
+                    onOldBatteryChange(newData);
+                  }
                 }
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

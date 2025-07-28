@@ -9,8 +9,7 @@ import {
   BarChart3,
   Settings,
   User,
-  Boxes,
-  Battery
+  Boxes
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -22,7 +21,6 @@ const Sidebar: React.FC = () => {
     { to: '/purchases', icon: ShoppingCart, label: 'Purchases' },
     { to: '/sales', icon: TrendingUp, label: 'Sales' },
     { to: '/stock', icon: Boxes, label: 'Stock' },
-    { to: '/old-batteries', icon: Battery, label: 'Old Batteries' },
     { to: '/reports', icon: BarChart3, label: 'Reports' },
     { to: '/settings', icon: Settings, label: 'Settings' },
   ];
@@ -33,7 +31,7 @@ const Sidebar: React.FC = () => {
         <h1 className="text-xl font-bold">Nihal Battery House</h1>
         <p className="text-sm text-nihal-yellow">& Free Oil Change</p>
       </div>
-      
+
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
           {navItems.map((item) => (
@@ -41,10 +39,9 @@ const Sidebar: React.FC = () => {
               <NavLink
                 to={item.to}
                 className={({ isActive }) =>
-                  `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-nihal-light-blue text-nihal-blue border-r-2 border-nihal-yellow'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-nihal-blue'
+                  `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                    ? 'bg-nihal-light-blue text-nihal-blue border-r-2 border-nihal-yellow'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-nihal-blue'
                   }`
                 }
               >

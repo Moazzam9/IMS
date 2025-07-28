@@ -1,6 +1,6 @@
 import { database } from '../config/firebase';
 import { ref, push, set, update, remove, onValue, off, get } from 'firebase/database';
-import { Product, Supplier, Customer, Purchase, Sale, User } from '../types';
+import { Product, Supplier, Customer, Purchase, Sale, User, SaleItem } from '../types';
 import { OldBatteryService } from './oldBatteryService';
 
 // Generic Firebase service functions
@@ -30,15 +30,15 @@ export class FirebaseService {
     const productsRef = ref(database, `users/${userId}/products`);
     const unsubscribe = onValue(productsRef, (snapshot) => {
       const data = snapshot.val();
-      const products: Product[] = data 
-        ? Object.entries(data).map(([id, product]) => ({ 
-            id, 
-            ...(product as Omit<Product, 'id'>) 
-          }))
+      const products: Product[] = data
+        ? Object.entries(data).map(([id, product]) => ({
+          id,
+          ...(product as Omit<Product, 'id'>)
+        }))
         : [];
       callback(products);
     });
-    
+
     return () => off(productsRef, 'value', unsubscribe);
   }
 
@@ -68,15 +68,15 @@ export class FirebaseService {
     const suppliersRef = ref(database, `users/${userId}/suppliers`);
     const unsubscribe = onValue(suppliersRef, (snapshot) => {
       const data = snapshot.val();
-      const suppliers: Supplier[] = data 
-        ? Object.entries(data).map(([id, supplier]) => ({ 
-            id, 
-            ...(supplier as Omit<Supplier, 'id'>) 
-          }))
+      const suppliers: Supplier[] = data
+        ? Object.entries(data).map(([id, supplier]) => ({
+          id,
+          ...(supplier as Omit<Supplier, 'id'>)
+        }))
         : [];
       callback(suppliers);
     });
-    
+
     return () => off(suppliersRef, 'value', unsubscribe);
   }
 
@@ -106,15 +106,15 @@ export class FirebaseService {
     const customersRef = ref(database, `users/${userId}/customers`);
     const unsubscribe = onValue(customersRef, (snapshot) => {
       const data = snapshot.val();
-      const customers: Customer[] = data 
-        ? Object.entries(data).map(([id, customer]) => ({ 
-            id, 
-            ...(customer as Omit<Customer, 'id'>) 
-          }))
+      const customers: Customer[] = data
+        ? Object.entries(data).map(([id, customer]) => ({
+          id,
+          ...(customer as Omit<Customer, 'id'>)
+        }))
         : [];
       callback(customers);
     });
-    
+
     return () => off(customersRef, 'value', unsubscribe);
   }
 
@@ -143,21 +143,22 @@ export class FirebaseService {
     const purchasesRef = ref(database, `users/${userId}/purchases`);
     const unsubscribe = onValue(purchasesRef, (snapshot) => {
       const data = snapshot.val();
-      const purchases: Purchase[] = data 
-        ? Object.entries(data).map(([id, purchase]) => ({ 
-            id, 
-            ...(purchase as Omit<Purchase, 'id'>) 
-          }))
+      const purchases: Purchase[] = data
+        ? Object.entries(data).map(([id, purchase]) => ({
+          id,
+          ...(purchase as Omit<Purchase, 'id'>)
+        }))
         : [];
       callback(purchases);
     });
-    
+
     return () => off(purchasesRef, 'value', unsubscribe);
   }
 
   // Sales
   static async addSale(sale: Omit<Sale, 'id'>, userId: string): Promise<string> {
     try {
+      console.log('FirebaseService.addSale called with:', sale);
       if (!Array.isArray(sale.items) || sale.items.length === 0) {
         throw new Error('Sale must include at least one item');
       }
@@ -170,6 +171,7 @@ export class FirebaseService {
 
       // Create the sale record without items array to avoid duplication
       const { items, ...saleData } = sale;
+      console.log('Saving sale record:', { ...saleData, id: saleId, createdAt: timestamp });
       await set(newSaleRef, {
         ...saleData,
         id: saleId,
@@ -178,9 +180,10 @@ export class FirebaseService {
 
       // Create sale items records
       const saleItemsRef = ref(database, `users/${userId}/saleItems/${saleId}`);
-      
+
       try {
         // First save all sale items
+        console.log('Saving sale items:', items);
         const savedItems = await Promise.all(items.map(async (item) => {
           const newItemRef = push(saleItemsRef);
           const itemId = newItemRef.key!;
@@ -203,17 +206,19 @@ export class FirebaseService {
             createdAt: timestamp
           };
 
+          console.log('Saving sale item:', itemData);
           await set(newItemRef, itemData);
           return { itemId, item };
         }));
 
         // Then save all old battery data
         if (savedItems.some(({ item }) => item.oldBatteryData)) {
+          console.log('Saving old battery data for items:', savedItems.filter(({ item }) => item.oldBatteryData));
           const oldBatteryPromises = savedItems
             .filter(({ item }) => item.oldBatteryData)
             .map(async ({ itemId, item }) => {
-              if (!item.oldBatteryData?.name || !item.oldBatteryData?.weight || 
-                  !item.oldBatteryData?.ratePerKg || typeof item.oldBatteryData?.deductionAmount !== 'number') {
+              if (!item.oldBatteryData?.name || !item.oldBatteryData?.weight ||
+                !item.oldBatteryData?.ratePerKg || typeof item.oldBatteryData?.deductionAmount !== 'number') {
                 throw new Error('Invalid old battery data');
               }
 
@@ -225,12 +230,14 @@ export class FirebaseService {
                 saleId,
                 saleItemId: itemId
               };
+              console.log('Saving old battery data:', oldBatteryData);
               await OldBatteryService.addOldBattery(oldBatteryData, userId);
             });
 
           await Promise.all(oldBatteryPromises);
         }
 
+        console.log('Sale saved successfully with ID:', saleId);
         return saleId;
       } catch (error) {
         console.error('Error saving sale items or old batteries:', error);
@@ -254,19 +261,130 @@ export class FirebaseService {
     await remove(saleRef);
   }
 
+  static async getSaleItems(saleId: string, userId: string): Promise<SaleItem[]> {
+    try {
+      const saleItemsRef = ref(database, `users/${userId}/saleItems/${saleId}`);
+      const snapshot = await get(saleItemsRef);
+      const data = snapshot.val();
+
+      const items: SaleItem[] = data
+        ? Object.entries(data).map(([itemId, item]) => ({
+          id: itemId,
+          ...(item as Omit<SaleItem, 'id'>)
+        }))
+        : [];
+
+      // Load old battery data for each item that has includeOldBattery = true
+      const itemsWithOldBattery = await Promise.all(items.map(async (item) => {
+        if (item.includeOldBattery) {
+          try {
+            const oldBatteries = await OldBatteryService.getOldBatteriesBySaleId(saleId, userId);
+            const oldBattery = oldBatteries.find(battery => battery.saleItemId === item.id);
+
+            if (oldBattery) {
+              return {
+                ...item,
+                oldBatteryData: {
+                  name: oldBattery.name,
+                  weight: oldBattery.weight,
+                  ratePerKg: oldBattery.ratePerKg,
+                  deductionAmount: oldBattery.deductionAmount
+                }
+              };
+            }
+          } catch (error) {
+            console.error(`Error loading old battery for item ${item.id}:`, error);
+          }
+        }
+
+        return item;
+      }));
+
+      console.log('Loaded sale items with old battery data:', itemsWithOldBattery);
+      return itemsWithOldBattery;
+    } catch (error) {
+      console.error(`Error loading items for sale ${saleId}:`, error);
+      return [];
+    }
+  }
+
   static subscribeToSales(callback: (sales: Sale[]) => void, userId: string): () => void {
     const salesRef = ref(database, `users/${userId}/sales`);
     const unsubscribe = onValue(salesRef, (snapshot) => {
       const data = snapshot.val();
-      const sales: Sale[] = data 
-        ? Object.entries(data).map(([id, sale]) => ({ 
-            id, 
-            ...(sale as Omit<Sale, 'id'>) 
-          }))
+      const sales: Sale[] = data
+        ? Object.entries(data).map(([id, sale]) => ({
+          id,
+          ...(sale as Omit<Sale, 'id'>)
+        }))
         : [];
+
+      // First, call the callback with basic sales data for immediate UI update
       callback(sales);
+
+      // Then, load items asynchronously and update again
+      if (sales.length > 0) {
+        Promise.all(sales.map(async (sale) => {
+          try {
+            const saleItemsRef = ref(database, `users/${userId}/saleItems/${sale.id}`);
+            const itemsSnapshot = await get(saleItemsRef);
+            const itemsData = itemsSnapshot.val();
+
+            const items: SaleItem[] = itemsData
+              ? Object.entries(itemsData).map(([itemId, item]) => ({
+                id: itemId,
+                ...(item as Omit<SaleItem, 'id'>)
+              }))
+              : [];
+
+            // Load old battery data for each item that has includeOldBattery = true
+            const itemsWithOldBattery = await Promise.all(items.map(async (item) => {
+              if (item.includeOldBattery) {
+                try {
+                  const oldBatteries = await OldBatteryService.getOldBatteriesBySaleId(sale.id, userId);
+                  const oldBattery = oldBatteries.find(battery => battery.saleItemId === item.id);
+
+                  if (oldBattery) {
+                    return {
+                      ...item,
+                      oldBatteryData: {
+                        name: oldBattery.name,
+                        weight: oldBattery.weight,
+                        ratePerKg: oldBattery.ratePerKg,
+                        deductionAmount: oldBattery.deductionAmount
+                      }
+                    };
+                  }
+                } catch (error) {
+                  console.error(`Error loading old battery for item ${item.id}:`, error);
+                }
+              }
+
+              return item;
+            }));
+
+            return {
+              ...sale,
+              items: itemsWithOldBattery
+            };
+          } catch (error) {
+            console.error(`Error loading items for sale ${sale.id}:`, error);
+            return {
+              ...sale,
+              items: []
+            };
+          }
+        })).then((salesWithItems) => {
+          // Update the callback with complete sales data including items
+          callback(salesWithItems);
+        }).catch((error) => {
+          console.error('Error loading sales with items:', error);
+          // Keep the basic sales data if items loading fails
+          callback(sales);
+        });
+      }
     });
-    
+
     return () => off(salesRef, 'value', unsubscribe);
   }
 
@@ -276,20 +394,20 @@ export class FirebaseService {
     const usersRef = ref(database, 'users');
     const newUserRef = push(usersRef);
     const userId = newUserRef.key!;
-    
+
     // Set the user data
     await set(newUserRef, {
       ...user,
       createdAt: new Date().toISOString()
     });
-    
+
     // Create a user-specific folder structure for their data
     const userDataRef = ref(database, `users/${userId}/profile`);
     await set(userDataRef, {
       initialized: true,
       createdAt: new Date().toISOString()
     });
-    
+
     return userId;
   }
 
@@ -297,26 +415,26 @@ export class FirebaseService {
     const usersRef = ref(database, 'users');
     const snapshot = await get(usersRef);
     const data = snapshot.val();
-    
+
     console.log('Checking for username:', username);
-    
+
     if (!data) {
       console.log('No users found in database');
       return null;
     }
-    
+
     console.log('Found users:', Object.keys(data).length);
     console.log('Available usernames:', Object.values(data).map((user: any) => user.username).join(', '));
-    
-    const userEntry = Object.entries(data).find(([_, user]: [string, any]) => 
+
+    const userEntry = Object.entries(data).find(([_, user]: [string, any]) =>
       user.username === username
     );
-    
+
     if (!userEntry) {
       console.log('Username not found');
       return null;
     }
-    
+
     console.log('Username found');
     const [id, userData] = userEntry;
     return { id, ...(userData as Omit<User, 'id'>) };
@@ -326,25 +444,25 @@ export class FirebaseService {
     const usersRef = ref(database, 'users');
     const snapshot = await get(usersRef);
     const data = snapshot.val();
-    
+
     console.log('Checking for firebaseUid:', firebaseUid);
-    
+
     if (!data) {
       console.log('No users found in database');
       return null;
     }
-    
+
     console.log('Found users:', Object.keys(data).length);
-    
-    const userEntry = Object.entries(data).find(([_, user]: [string, any]) => 
+
+    const userEntry = Object.entries(data).find(([_, user]: [string, any]) =>
       user.firebaseUid === firebaseUid
     );
-    
+
     if (!userEntry) {
       console.log('User with firebaseUid not found');
       return null;
     }
-    
+
     console.log('User found by firebaseUid');
     const [id, userData] = userEntry;
     return { id, ...(userData as Omit<User, 'id'>) };
@@ -360,7 +478,7 @@ export class FirebaseService {
     });
     return newStockMovementRef.key!;
   }
-  
+
   // Settings
   static async saveSettings(settingsType: string, settings: any, userId: string): Promise<void> {
     const settingsRef = ref(database, `users/${userId}/settings/${settingsType}`);
@@ -369,7 +487,7 @@ export class FirebaseService {
       updatedAt: new Date().toISOString()
     });
   }
-  
+
   static async getSettings(settingsType: string, userId: string): Promise<any> {
     const settingsRef = ref(database, `users/${userId}/settings/${settingsType}`);
     const snapshot = await get(settingsRef);
@@ -380,15 +498,15 @@ export class FirebaseService {
     const stockMovementsRef = ref(database, `users/${userId}/stockMovements`);
     const unsubscribe = onValue(stockMovementsRef, (snapshot) => {
       const data = snapshot.val();
-      const stockMovements: StockMovement[] = data 
-        ? Object.entries(data).map(([id, stockMovement]) => ({ 
-            id, 
-            ...(stockMovement as Omit<StockMovement, 'id'>) 
-          }))
+      const stockMovements: StockMovement[] = data
+        ? Object.entries(data).map(([id, stockMovement]) => ({
+          id,
+          ...(stockMovement as Omit<StockMovement, 'id'>)
+        }))
         : [];
       callback(stockMovements);
     });
-    
+
     return () => off(stockMovementsRef, 'value', unsubscribe);
   }
 }
