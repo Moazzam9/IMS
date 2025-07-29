@@ -42,9 +42,25 @@ const SettingsPage: React.FC = () => {
     logo: null
   });
   
-  // Load settings from Firebase on component mount
+  // Load settings from Firebase and localStorage on component mount
   useEffect(() => {
     const loadSettings = async () => {
+      // First try to load from localStorage for immediate display
+      try {
+        const localCompanyInfo = localStorage.getItem('companyInfo');
+        if (localCompanyInfo) {
+          setCompanyInfo(JSON.parse(localCompanyInfo));
+        }
+        
+        const localPrintSettings = localStorage.getItem('printSettings');
+        if (localPrintSettings) {
+          setPrintSettings(JSON.parse(localPrintSettings));
+        }
+      } catch (error) {
+        console.error('Error loading settings from localStorage:', error);
+      }
+      
+      // Then try to load from Firebase if user is logged in
       if (!user) return;
       
       try {
@@ -52,12 +68,16 @@ const SettingsPage: React.FC = () => {
         const storedCompanyInfo = await FirebaseService.getSettings('companyInfo', user.id);
         if (storedCompanyInfo) {
           setCompanyInfo(storedCompanyInfo);
+          // Update localStorage with Firebase data
+          localStorage.setItem('companyInfo', JSON.stringify(storedCompanyInfo));
         }
         
         // Load print settings
         const storedPrintSettings = await FirebaseService.getSettings('printSettings', user.id);
         if (storedPrintSettings) {
           setPrintSettings(storedPrintSettings);
+          // Update localStorage with Firebase data
+          localStorage.setItem('printSettings', JSON.stringify(storedPrintSettings));
         }
       } catch (error) {
         console.error('Error loading settings from Firebase:', error);
@@ -112,7 +132,7 @@ const SettingsPage: React.FC = () => {
     }
   };
   
-  // Save settings to Firebase
+  // Save settings to Firebase and localStorage
   const saveSettings = async () => {
     if (!user) {
       showToast('You must be logged in to save settings', 'error');
@@ -127,6 +147,10 @@ const SettingsPage: React.FC = () => {
       
       // Save print settings to Firebase
       await FirebaseService.saveSettings('printSettings', printSettings, user.id);
+      
+      // Save to localStorage for immediate use in the application
+      localStorage.setItem('companyInfo', JSON.stringify(companyInfo));
+      localStorage.setItem('printSettings', JSON.stringify(printSettings));
       
       setIsSubmitting(false);
       showToast('Settings saved successfully to your account!', 'success');
