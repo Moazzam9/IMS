@@ -16,6 +16,7 @@ import StockManagement from './pages/Stock/StockManagement';
 import ReportsPage from './pages/Reports/ReportsPage';
 import SettingsPage from './pages/Settings/SettingsPage';
 import OldBatteriesList from './pages/OldBatteries/OldBatteriesList';
+import { StaffList } from './pages/Staff';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -28,6 +29,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/sales" element={<SalesList />} />
       <Route path="/stock" element={<StockManagement />} />
       <Route path="/old-batteries" element={<OldBatteriesList />} />
+      <Route path="/staff" element={<StaffList />} />
       <Route path="/reports" element={<ReportsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
     </Routes>

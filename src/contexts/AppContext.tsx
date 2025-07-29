@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, Supplier, Customer, Purchase, Sale, StockMovement } from '../types';
+import { Product, Supplier, Customer, Purchase, Sale, StockMovement, Staff } from '../types';
 import { FirebaseService } from '../services/firebase';
 import { useAuth } from './AuthContext';
 
@@ -11,6 +11,7 @@ interface AppContextType {
   purchases: Purchase[];
   sales: Sale[];
   stockMovements: StockMovement[];
+  staff: Staff[];
   loading: boolean;
 
   // CRUD operations
@@ -34,6 +35,10 @@ interface AppContextType {
   updateSale: (id: string, sale: Partial<Sale>) => Promise<void>;
   deleteSale: (id: string) => Promise<void>;
 
+  addStaff: (staff: Omit<Staff, 'id'>) => Promise<string>;
+  updateStaff: (id: string, staff: Partial<Staff>) => Promise<void>;
+  deleteStaff: (id: string) => Promise<void>;
+
   addStockMovement: (stockMovement: Omit<StockMovement, 'id'>) => Promise<string>;
 
   // Additional functions
@@ -48,6 +53,7 @@ const AppContext = createContext<AppContextType>({
   purchases: [],
   sales: [],
   stockMovements: [],
+  staff: [],
   loading: true,
   addProduct: async () => '',
   updateProduct: async () => { },
@@ -64,6 +70,9 @@ const AppContext = createContext<AppContextType>({
   addSale: async () => '',
   updateSale: async () => { },
   deleteSale: async () => { },
+  addStaff: async () => '',
+  updateStaff: async () => { },
+  deleteStaff: async () => { },
   addStockMovement: async () => ''
 });
 
@@ -85,6 +94,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [electronReady, setElectronReady] = useState(false);
 
@@ -149,6 +159,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubscribePurchases: (() => void) | undefined;
     let unsubscribeSales: (() => void) | undefined;
     let unsubscribeStockMovements: (() => void) | undefined;
+    let unsubscribeStaff: (() => void) | undefined;
 
     const initializeData = async () => {
       if (!userId) {
@@ -159,6 +170,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setPurchases([]);
         setSales([]);
         setStockMovements([]);
+        setStaff([]);
         setLoading(false);
         return;
       }
@@ -205,6 +217,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           );
           setSales(sortedSales);
         }, userId);
+        
+        unsubscribeStaff = FirebaseService.subscribeToStaff((staff) => {
+          // Sort staff by createdAt date (newest first)
+          const sortedStaff = [...staff].sort((a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setStaff(sortedStaff);
+        }, userId);
 
         unsubscribeStockMovements = FirebaseService.subscribeToStockMovements((movements) => {
           // Sort stock movements by createdAt date (newest first)
@@ -231,6 +251,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (unsubscribePurchases) unsubscribePurchases();
       if (unsubscribeSales) unsubscribeSales();
       if (unsubscribeStockMovements) unsubscribeStockMovements();
+      if (unsubscribeStaff) unsubscribeStaff();
     };
   }, [userId]);
 
@@ -433,6 +454,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return await FirebaseService.getSaleItems(saleId, userId);
   };
 
+  const addStaff = async (staff: Omit<Staff, 'id'>) => {
+    return await FirebaseService.addStaff(staff, userId);
+  };
+
+  const updateStaff = async (id: string, staff: Partial<Staff>) => {
+    await FirebaseService.updateStaff(id, staff, userId);
+  };
+
+  const deleteStaff = async (id: string) => {
+    await FirebaseService.deleteStaff(id, userId);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -443,6 +476,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         purchases,
         sales,
         stockMovements,
+        staff,
         loading,
         addProduct,
         updateProduct,
@@ -459,6 +493,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addSale,
         updateSale,
         deleteSale,
+        addStaff,
+        updateStaff,
+        deleteStaff,
         addStockMovement,
         getSaleItems
       }}

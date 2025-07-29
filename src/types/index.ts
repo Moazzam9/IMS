@@ -152,3 +152,16 @@ export interface OldBattery {
   saleItemId: string;
   createdAt: string;
 }
+
+export interface Staff {
+  id: string;
+  fullName: string;
+  cnic: string;
+  phone: string;
+  category: string;
+  salary: number;
+  joiningDate: string;
+  address: string;
+  status: 'active' | 'resigned';
+  createdAt: string;
+}

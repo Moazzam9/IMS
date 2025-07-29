@@ -9,7 +9,8 @@ import {
   BarChart3,
   Settings,
   User,
-  Boxes
+  Boxes,
+  UserCog
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -18,6 +19,7 @@ const Sidebar: React.FC = () => {
     { to: '/products', icon: Package, label: 'Products' },
     { to: '/suppliers', icon: Users, label: 'Suppliers' },
     { to: '/customers', icon: User, label: 'Customers' },
+    { to: '/staff', icon: UserCog, label: 'Staff' },
     { to: '/purchases', icon: ShoppingCart, label: 'Purchases' },
     { to: '/sales', icon: TrendingUp, label: 'Sales' },
     { to: '/stock', icon: Boxes, label: 'Stock' },

@@ -1,10 +1,46 @@
 import { database } from '../config/firebase';
 import { ref, push, set, update, remove, onValue, off, get } from 'firebase/database';
-import { Product, Supplier, Customer, Purchase, Sale, User, SaleItem } from '../types';
+import { Product, Supplier, Customer, Purchase, Sale, User, SaleItem, Staff } from '../types';
 import { OldBatteryService } from './oldBatteryService';
 
 // Generic Firebase service functions
-export class FirebaseService {
+export class FirebaseService {  
+  // Staff
+  static async addStaff(staff: Omit<Staff, 'id'>, userId: string): Promise<string> {
+    const staffRef = ref(database, `users/${userId}/staff`);
+    const newStaffRef = push(staffRef);
+    await set(newStaffRef, {
+      ...staff,
+      createdAt: new Date().toISOString()
+    });
+    return newStaffRef.key!;
+  }
+
+  static async updateStaff(id: string, staff: Partial<Staff>, userId: string): Promise<void> {
+    const staffRef = ref(database, `users/${userId}/staff/${id}`);
+    await update(staffRef, staff);
+  }
+
+  static async deleteStaff(id: string, userId: string): Promise<void> {
+    const staffRef = ref(database, `users/${userId}/staff/${id}`);
+    await remove(staffRef);
+  }
+
+  static subscribeToStaff(callback: (staff: Staff[]) => void, userId: string): () => void {
+    const staffRef = ref(database, `users/${userId}/staff`);
+    const unsubscribe = onValue(staffRef, (snapshot) => {
+      const data = snapshot.val();
+      const staffList: Staff[] = data
+        ? Object.entries(data).map(([id, staff]) => ({
+          id,
+          ...(staff as Omit<Staff, 'id'>)
+        }))
+        : [];
+      callback(staffList);
+    });
+
+    return () => off(staffRef, 'value', unsubscribe);
+  }
   // Products
   static async addProduct(product: Omit<Product, 'id'>, userId: string): Promise<string> {
     const productsRef = ref(database, `users/${userId}/products`);
