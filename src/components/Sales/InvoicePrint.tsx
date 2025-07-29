@@ -210,9 +210,17 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                       <span>₨{totalOldBatteryDeductions.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between py-2 border-t border-b font-bold">
+                  <div className="flex justify-between py-2 border-t font-bold">
                     <span>Total:</span>
                     <span>₨{(sale.netAmount || sale.totalAmount).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="font-medium">Amount Paid:</span>
+                    <span>₨{(sale.amountPaid || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-t border-b font-bold">
+                    <span>Remaining Balance:</span>
+                    <span>₨{(sale.remainingBalance || 0).toFixed(2)}</span>
                   </div>
                 </div>
               </div>

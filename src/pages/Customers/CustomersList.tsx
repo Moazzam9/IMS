@@ -10,7 +10,7 @@ import { Plus, Edit, Trash2, User } from 'lucide-react';
 import { Customer } from '../../types';
 
 const CustomersList: React.FC = () => {
-  const { customers, loading, addCustomer, updateCustomer, deleteCustomer } = useApp();
+  const { customers, sales, loading, addCustomer, updateCustomer, deleteCustomer } = useApp();
   const { showToast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -98,6 +98,26 @@ const CustomersList: React.FC = () => {
     { key: 'name', label: 'Name' },
     { key: 'phone', label: 'Phone' },
     { key: 'email', label: 'Email' },
+    { 
+      key: 'remainingBalance', 
+      label: 'Remaining Balance',
+      render: (_: any, customer: Customer) => {
+        // Calculate remaining balance from sales data
+        const customerSales = sales.filter(sale => {
+          // Check both customerId and customer name match
+          return (sale.customerId === customer.id) || 
+                 (sale.customerName && sale.customerName.toLowerCase() === customer.name.toLowerCase());
+        });
+        
+        const totalRemainingBalance = customerSales.reduce((total, sale) => total + (sale.remainingBalance || 0), 0);
+        
+        return (
+          <span className={`font-medium ${totalRemainingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+            {totalRemainingBalance > 0 ? `Rs${totalRemainingBalance.toFixed(2)}` : 'Rs0.00'}
+          </span>
+        );
+      }
+    },
     {
       key: 'actions',
       label: 'Actions',

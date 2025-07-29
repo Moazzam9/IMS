@@ -82,6 +82,8 @@ export interface Sale {
   totalAmount: number;
   discount: number;
   netAmount: number;
+  amountPaid: number; // Amount paid by customer
+  remainingBalance: number; // Remaining balance to be paid
   totalItems: number;
   status: 'completed' | 'returned';
   saleDate: string;

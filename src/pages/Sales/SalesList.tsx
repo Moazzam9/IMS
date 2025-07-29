@@ -83,6 +83,7 @@ const SalesList: React.FC = () => {
     salesperson: '',
     saleDate: new Date().toISOString().slice(0, 16), // Include date and time (YYYY-MM-DDTHH:MM)
     discount: 0,
+    amountPaid: 0,
     status: 'completed' as 'completed' | 'returned'
   });
 
@@ -178,6 +179,8 @@ const SalesList: React.FC = () => {
         return sum + itemDiscount + oldBatteryDeduction;
       }, 0);
       const netAmount = totalAmount - totalDiscount;
+      const amountPaid = parseFloat(formData.amountPaid.toString()) || 0;
+      const remainingBalance = netAmount - amountPaid;
       const totalItems = saleItems.reduce((sum, item) => sum + item.quantity, 0);
 
       // Validate sale items before creating sale data
@@ -203,6 +206,8 @@ const SalesList: React.FC = () => {
         discount: totalDiscount,
         totalAmount,
         netAmount,
+        amountPaid,
+        remainingBalance,
         totalItems,
         createdAt: new Date().toISOString(),
         items: saleItems.map(item => {
@@ -328,6 +333,7 @@ const SalesList: React.FC = () => {
         salesperson: '',
         saleDate: new Date().toISOString().slice(0, 16),
         discount: 0,
+        amountPaid: 0,
         status: 'completed'
       });
       setSaleItems([]);
@@ -356,6 +362,7 @@ const SalesList: React.FC = () => {
       salesperson: sale.salesperson || '',
       saleDate: sale.saleDate,
       discount: sale.discount,
+      amountPaid: sale.amountPaid || 0,
       status: sale.status
     });
 
@@ -502,6 +509,16 @@ const SalesList: React.FC = () => {
       label: 'Net Amount',
       render: (value: number) => `₨${value.toFixed(2)}`
     },
+    {
+      key: 'amountPaid',
+      label: 'Amount Paid',
+      render: (value: number) => `₨${(value || 0).toFixed(2)}`
+    },
+    {
+      key: 'remainingBalance',
+      label: 'Remaining Balance',
+      render: (value: number) => `₨${(value || 0).toFixed(2)}`
+    },
     { key: 'totalItems', label: 'Items' },
     {
       key: 'status',
@@ -629,6 +646,7 @@ const SalesList: React.FC = () => {
             salesperson: '',
             saleDate: new Date().toISOString().split('T')[0],
             discount: 0,
+            amountPaid: 0,
             status: 'completed'
           });
           setSaleItems([]);
@@ -733,6 +751,38 @@ const SalesList: React.FC = () => {
                 <option value="completed">Completed</option>
                 <option value="returned">Returned</option>
               </select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Amount Paid
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.amountPaid}
+                onChange={(e) => {
+                  const amountPaid = parseFloat(e.target.value) || 0;
+                  setFormData({ ...formData, amountPaid });
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Remaining Balance
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={saleItems.length > 0 ? 
+                  (saleItems.reduce((sum, item) => sum + item.total, 0) - formData.amountPaid).toFixed(2) : 
+                  '0.00'}
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
+              />
             </div>
           </div>
 
