@@ -68,8 +68,6 @@ export interface PurchaseItem {
   product?: Product;
   quantity: number;
   tradePrice: number;
-  bonus?: number;
-  discount: number;
   salePrice: number;
   total: number;
 }

@@ -30,9 +30,9 @@ const Table: React.FC<TableProps> = ({ columns, data, className = '' }) => {
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {data.map((row, rowIndex) => (
-            <tr key={rowIndex} className="hover:bg-gray-50">
-              {columns.map((column) => (
-                <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <tr key={`row-${rowIndex}`} className="hover:bg-gray-50">
+              {columns.map((column, colIndex) => (
+                <td key={`${rowIndex}-${column.key}-${colIndex}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {column.render ? column.render(row[column.key], row) : row[column.key]}
                 </td>
               ))}

@@ -42,6 +42,18 @@ export class FirebaseService {
     return () => off(productsRef, 'value', unsubscribe);
   }
 
+  static async getProducts(userId: string): Promise<Product[]> {
+    const productsRef = ref(database, `users/${userId}/products`);
+    const snapshot = await get(productsRef);
+    const data = snapshot.val();
+    return data
+      ? Object.entries(data).map(([id, product]) => ({
+        id,
+        ...(product as Omit<Product, 'id'>)
+      }))
+      : [];
+  }
+
   // Suppliers
   static async addSupplier(supplier: Omit<Supplier, 'id'>, userId: string): Promise<string> {
     const suppliersRef = ref(database, `users/${userId}/suppliers`);
@@ -119,24 +131,149 @@ export class FirebaseService {
   }
 
   // Purchases
+  static async getPurchaseItems(purchaseId: string, userId: string): Promise<PurchaseItem[]> {
+    try {
+      const purchaseItemsRef = ref(database, `users/${userId}/purchaseItems/${purchaseId}`);
+      const snapshot = await get(purchaseItemsRef);
+      const data = snapshot.val();
+
+      const items: PurchaseItem[] = data
+        ? Object.entries(data).map(([itemId, item]) => ({
+          id: itemId,
+          purchaseId,
+          ...(item as Omit<PurchaseItem, 'id' | 'purchaseId'>)
+        }))
+        : [];
+
+      console.log('Loaded purchase items:', items);
+      return items;
+    } catch (error) {
+      console.error(`Error loading items for purchase ${purchaseId}:`, error);
+      return [];
+    }
+  }
+
   static async addPurchase(purchase: Omit<Purchase, 'id'>, userId: string): Promise<string> {
-    const purchasesRef = ref(database, `users/${userId}/purchases`);
-    const newPurchaseRef = push(purchasesRef);
-    await set(newPurchaseRef, {
-      ...purchase,
-      createdAt: new Date().toISOString()
-    });
-    return newPurchaseRef.key!;
+    try {
+      console.log('FirebaseService.addPurchase called with:', purchase);
+      if (!Array.isArray(purchase.items) || purchase.items.length === 0) {
+        throw new Error('Purchase must include at least one item');
+      }
+
+      const purchasesRef = ref(database, `users/${userId}/purchases`);
+      const newPurchaseRef = push(purchasesRef);
+      const purchaseId = newPurchaseRef.key!;
+
+      const timestamp = new Date().toISOString();
+
+      // Create the purchase record without items array to avoid duplication
+      const { items, ...purchaseData } = purchase;
+      console.log('Saving purchase record:', { ...purchaseData, id: purchaseId, createdAt: timestamp });
+      await set(newPurchaseRef, {
+        ...purchaseData,
+        id: purchaseId,
+        createdAt: timestamp
+      });
+
+      // Then save all purchase items separately
+      try {
+        const purchaseItemsRef = ref(database, `users/${userId}/purchaseItems/${purchaseId}`);
+        const itemPromises = items.map(async (item) => {
+          const newItemRef = push(purchaseItemsRef);
+          const itemId = newItemRef.key!;
+
+          const itemData = {
+            productId: item.productId,
+            quantity: item.quantity,
+            tradePrice: item.tradePrice,
+            total: item.total,
+            createdAt: timestamp
+          };
+
+          console.log('Saving purchase item:', itemData);
+          await set(newItemRef, itemData);
+        });
+
+        await Promise.all(itemPromises);
+        console.log('Purchase saved successfully with ID:', purchaseId);
+        return purchaseId;
+      } catch (error) {
+        console.error('Error saving purchase items:', error);
+        // Delete the purchase if saving items fails
+        await remove(ref(database, `users/${userId}/purchases/${purchaseId}`));
+        throw new Error('Failed to save purchase items');
+      }
+    } catch (error) {
+      console.error('Error adding purchase:', error);
+      throw new Error('Failed to add purchase to database: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
   }
 
   static async updatePurchase(id: string, purchase: Partial<Purchase>, userId: string): Promise<void> {
-    const purchaseRef = ref(database, `users/${userId}/purchases/${id}`);
-    await update(purchaseRef, purchase);
+    try {
+      console.log('FirebaseService.updatePurchase called with:', purchase);
+
+      const timestamp = new Date().toISOString();
+      const purchaseRef = ref(database, `users/${userId}/purchases/${id}`);
+
+      // Update the purchase record without items array
+      const { items, ...purchaseData } = purchase;
+      console.log('Updating purchase record:', { ...purchaseData, updatedAt: timestamp });
+      await update(purchaseRef, {
+        ...purchaseData,
+        updatedAt: timestamp
+      });
+
+      // Handle purchase items separately
+      if (Array.isArray(items)) {
+        // First, remove all existing items
+        const purchaseItemsRef = ref(database, `users/${userId}/purchaseItems/${id}`);
+        await remove(purchaseItemsRef);
+
+        // Then add all items as new
+        const itemPromises = items.map(async (item) => {
+          const newItemRef = push(purchaseItemsRef);
+          const itemId = newItemRef.key!;
+
+          const itemData = {
+            productId: item.productId,
+            quantity: item.quantity,
+            tradePrice: item.tradePrice,
+            total: item.total,
+            createdAt: timestamp
+          };
+
+          console.log('Updating purchase item:', itemData);
+          await set(newItemRef, itemData);
+        });
+
+        await Promise.all(itemPromises);
+      }
+
+      console.log('Purchase updated successfully with ID:', id);
+    } catch (error) {
+      console.error('Error updating purchase:', error);
+      throw new Error('Failed to update purchase in database: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
   }
 
   static async deletePurchase(id: string, userId: string): Promise<void> {
-    const purchaseRef = ref(database, `users/${userId}/purchases/${id}`);
-    await remove(purchaseRef);
+    try {
+      console.log('FirebaseService.deletePurchase called with ID:', id);
+
+      // Delete the purchase record
+      const purchaseRef = ref(database, `users/${userId}/purchases/${id}`);
+      await remove(purchaseRef);
+
+      // Also delete all purchase items
+      const purchaseItemsRef = ref(database, `users/${userId}/purchaseItems/${id}`);
+      await remove(purchaseItemsRef);
+
+      console.log('Purchase and its items deleted successfully with ID:', id);
+    } catch (error) {
+      console.error('Error deleting purchase:', error);
+      throw new Error('Failed to delete purchase from database: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
   }
 
   static subscribeToPurchases(callback: (purchases: Purchase[]) => void, userId: string): () => void {
@@ -149,7 +286,46 @@ export class FirebaseService {
           ...(purchase as Omit<Purchase, 'id'>)
         }))
         : [];
+
+      // First, call the callback with basic purchases data for immediate UI update
       callback(purchases);
+
+      // Then, load items asynchronously and update again
+      if (purchases.length > 0) {
+        Promise.all(purchases.map(async (purchase) => {
+          try {
+            const purchaseItemsRef = ref(database, `users/${userId}/purchaseItems/${purchase.id}`);
+            const itemsSnapshot = await get(purchaseItemsRef);
+            const itemsData = itemsSnapshot.val();
+
+            const items: PurchaseItem[] = itemsData
+              ? Object.entries(itemsData).map(([itemId, item]) => ({
+                id: itemId,
+                purchaseId: purchase.id,
+                ...(item as Omit<PurchaseItem, 'id' | 'purchaseId'>)
+              }))
+              : [];
+
+            return {
+              ...purchase,
+              items: items
+            };
+          } catch (error) {
+            console.error(`Error loading items for purchase ${purchase.id}:`, error);
+            return {
+              ...purchase,
+              items: []
+            };
+          }
+        })).then((purchasesWithItems) => {
+          // Update the callback with complete purchases data including items
+          callback(purchasesWithItems);
+        }).catch((error) => {
+          console.error('Error loading purchases with items:', error);
+          // Keep the basic purchases data if items loading fails
+          callback(purchases);
+        });
+      }
     });
 
     return () => off(purchasesRef, 'value', unsubscribe);

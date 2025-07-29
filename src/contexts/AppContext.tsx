@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 
 interface AppContextType {
   products: Product[];
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   suppliers: Supplier[];
   customers: Customer[];
   purchases: Purchase[];
@@ -41,6 +42,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType>({
   products: [],
+  setProducts: () => { },
   suppliers: [],
   customers: [],
   purchases: [],
@@ -432,32 +434,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   return (
-    <AppContext.Provider value={{
-      products,
-      suppliers,
-      customers,
-      purchases,
-      sales,
-      stockMovements,
-      loading,
-      addProduct,
-      updateProduct,
-      deleteProduct,
-      addSupplier,
-      updateSupplier,
-      deleteSupplier,
-      addCustomer,
-      updateCustomer,
-      deleteCustomer,
-      addPurchase,
-      updatePurchase,
-      deletePurchase,
-      addSale,
-      updateSale,
-      deleteSale,
-      addStockMovement,
-      getSaleItems
-    }}>
+    <AppContext.Provider
+      value={{
+        products,
+        setProducts,
+        suppliers,
+        customers,
+        purchases,
+        sales,
+        stockMovements,
+        loading,
+        addProduct,
+        updateProduct,
+        deleteProduct,
+        addSupplier,
+        updateSupplier,
+        deleteSupplier,
+        addCustomer,
+        updateCustomer,
+        deleteCustomer,
+        addPurchase,
+        updatePurchase,
+        deletePurchase,
+        addSale,
+        updateSale,
+        deleteSale,
+        addStockMovement,
+        getSaleItems
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
