@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../../components/Common/Card';
 import Button from '../../components/Common/Button';
-import { Settings, Store, Printer, Database } from 'lucide-react';
+import { Settings, Store, Printer, Database, Lock } from 'lucide-react';
 import { FirebaseService } from '../../services/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { auth } from '../../config/firebase';
+import PasswordChangeForm from '../../components/Settings/PasswordChangeForm';
 
 interface CompanyInfo {
   name: string;
@@ -196,6 +199,14 @@ const SettingsPage: React.FC = () => {
               >
                 <Database className="mr-3 h-5 w-5" />
                 Database Backup
+              </button>
+              
+              <button
+                className={`w-full flex items-center px-4 py-3 text-left ${activeTab === 'password' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                onClick={() => setActiveTab('password')}
+              >
+                <Lock className="mr-3 h-5 w-5" />
+                Change Password
               </button>
             </nav>
           </Card>
@@ -495,6 +506,15 @@ const SettingsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+            
+            {activeTab === 'password' && (
+              <div className="p-6">
+                <h2 className="text-xl font-medium text-gray-900 mb-4">Change Password</h2>
+                <p className="text-gray-600 mb-6">Update your account password securely.</p>
+                
+                <PasswordChangeForm />
               </div>
             )}
             

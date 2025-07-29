@@ -17,6 +17,7 @@ import ReportsPage from './pages/Reports/ReportsPage';
 import SettingsPage from './pages/Settings/SettingsPage';
 import OldBatteriesList from './pages/OldBatteries/OldBatteriesList';
 import { StaffList } from './pages/Staff';
+import { AddExpense, SearchReport, ExpenseHead } from './pages/Expense';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -32,6 +33,10 @@ const AppRoutes: React.FC = () => {
       <Route path="/staff" element={<StaffList />} />
       <Route path="/reports" element={<ReportsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
+      {/* Expense Routes */}
+      <Route path="/expense/add" element={<AddExpense />} />
+      <Route path="/expense/search" element={<SearchReport />} />
+      <Route path="/expense/head" element={<ExpenseHead />} />
     </Routes>
   );
 };

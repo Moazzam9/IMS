@@ -1,6 +1,6 @@
 import { database } from '../config/firebase';
 import { ref, push, set, update, remove, onValue, off, get } from 'firebase/database';
-import { Product, Supplier, Customer, Purchase, Sale, User, SaleItem, Staff } from '../types';
+import { Product, Supplier, Customer, Purchase, Sale, User, SaleItem, Staff, ExpenseHead } from '../types';
 import { OldBatteryService } from './oldBatteryService';
 
 // Generic Firebase service functions
@@ -677,6 +677,80 @@ export class FirebaseService {
       createdAt: new Date().toISOString()
     });
     return newStockMovementRef.key!;
+  }
+
+  // Expense Heads
+  static async addExpenseHead(expenseHead: Omit<ExpenseHead, 'id'>, userId: string): Promise<string> {
+    const expenseHeadsRef = ref(database, `users/${userId}/expenseHeads`);
+    const newExpenseHeadRef = push(expenseHeadsRef);
+    await set(newExpenseHeadRef, {
+      ...expenseHead,
+      createdAt: new Date().toISOString()
+    });
+    return newExpenseHeadRef.key!;
+  }
+
+  static async updateExpenseHead(id: string, expenseHead: Partial<ExpenseHead>, userId: string): Promise<void> {
+    const expenseHeadRef = ref(database, `users/${userId}/expenseHeads/${id}`);
+    await update(expenseHeadRef, expenseHead);
+  }
+
+  static async deleteExpenseHead(id: string, userId: string): Promise<void> {
+    const expenseHeadRef = ref(database, `users/${userId}/expenseHeads/${id}`);
+    await remove(expenseHeadRef);
+  }
+
+  static subscribeToExpenseHeads(callback: (expenseHeads: ExpenseHead[]) => void, userId: string): () => void {
+    const expenseHeadsRef = ref(database, `users/${userId}/expenseHeads`);
+    const unsubscribe = onValue(expenseHeadsRef, (snapshot) => {
+      const data = snapshot.val();
+      const expenseHeadsList: ExpenseHead[] = data
+        ? Object.entries(data).map(([id, expenseHead]) => ({
+          id,
+          ...(expenseHead as Omit<ExpenseHead, 'id'>)
+        }))
+        : [];
+      callback(expenseHeadsList);
+    });
+
+    return () => off(expenseHeadsRef, 'value', unsubscribe);
+  }
+
+  // Expenses
+  static async addExpense(expense: Omit<Expense, 'id'>, userId: string): Promise<string> {
+    const expensesRef = ref(database, `users/${userId}/expenses`);
+    const newExpenseRef = push(expensesRef);
+    await set(newExpenseRef, {
+      ...expense,
+      createdAt: new Date().toISOString()
+    });
+    return newExpenseRef.key!;
+  }
+
+  static async updateExpense(id: string, expense: Partial<Expense>, userId: string): Promise<void> {
+    const expenseRef = ref(database, `users/${userId}/expenses/${id}`);
+    await update(expenseRef, expense);
+  }
+
+  static async deleteExpense(id: string, userId: string): Promise<void> {
+    const expenseRef = ref(database, `users/${userId}/expenses/${id}`);
+    await remove(expenseRef);
+  }
+
+  static subscribeToExpenses(callback: (expenses: Expense[]) => void, userId: string): () => void {
+    const expensesRef = ref(database, `users/${userId}/expenses`);
+    const unsubscribe = onValue(expensesRef, (snapshot) => {
+      const data = snapshot.val();
+      const expensesList: Expense[] = data
+        ? Object.entries(data).map(([id, expense]) => ({
+          id,
+          ...(expense as Omit<Expense, 'id'>)
+        }))
+        : [];
+      callback(expensesList);
+    });
+
+    return () => off(expensesRef, 'value', unsubscribe);
   }
 
   // Settings

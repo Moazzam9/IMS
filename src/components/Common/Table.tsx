@@ -3,7 +3,7 @@ import React from 'react';
 interface Column {
   key: string;
   label: string;
-  render?: (value: any, row: any) => React.ReactNode;
+  render?: (value: any, row: any, index?: number) => React.ReactNode;
 }
 
 interface TableProps {
@@ -33,7 +33,7 @@ const Table: React.FC<TableProps> = ({ columns, data, className = '' }) => {
             <tr key={`row-${rowIndex}`} className="hover:bg-gray-50">
               {columns.map((column, colIndex) => (
                 <td key={`${rowIndex}-${column.key}-${colIndex}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {column.render ? column.render(row[column.key], row) : row[column.key]}
+                  {column.render ? column.render(row[column.key], row, rowIndex) : row[column.key]}
                 </td>
               ))}
             </tr>

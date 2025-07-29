@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, Supplier, Customer, Purchase, Sale, StockMovement, Staff } from '../types';
+import { Product, Supplier, Customer, Purchase, Sale, StockMovement, Staff, ExpenseHead, Expense } from '../types';
 import { FirebaseService } from '../services/firebase';
 import { useAuth } from './AuthContext';
 
@@ -12,6 +12,8 @@ interface AppContextType {
   sales: Sale[];
   stockMovements: StockMovement[];
   staff: Staff[];
+  expenseHeads: ExpenseHead[];
+  expenses: Expense[];
   loading: boolean;
 
   // CRUD operations
@@ -39,6 +41,14 @@ interface AppContextType {
   updateStaff: (id: string, staff: Partial<Staff>) => Promise<void>;
   deleteStaff: (id: string) => Promise<void>;
 
+  addExpenseHead: (expenseHead: Omit<ExpenseHead, 'id'>) => Promise<string>;
+  updateExpenseHead: (id: string, expenseHead: Partial<ExpenseHead>) => Promise<void>;
+  deleteExpenseHead: (id: string) => Promise<void>;
+
+  addExpense: (expense: Omit<Expense, 'id'>) => Promise<string>;
+  updateExpense: (id: string, expense: Partial<Expense>) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
+
   addStockMovement: (stockMovement: Omit<StockMovement, 'id'>) => Promise<string>;
 
   // Additional functions
@@ -54,6 +64,8 @@ const AppContext = createContext<AppContextType>({
   sales: [],
   stockMovements: [],
   staff: [],
+  expenseHeads: [],
+  expenses: [],
   loading: true,
   addProduct: async () => '',
   updateProduct: async () => { },
@@ -73,7 +85,14 @@ const AppContext = createContext<AppContextType>({
   addStaff: async () => '',
   updateStaff: async () => { },
   deleteStaff: async () => { },
-  addStockMovement: async () => ''
+  addExpenseHead: async () => '',
+  updateExpenseHead: async () => { },
+  deleteExpenseHead: async () => { },
+  addExpense: async () => '',
+  updateExpense: async () => { },
+  deleteExpense: async () => { },
+  addStockMovement: async () => '',
+  getSaleItems: async () => []
 });
 
 export const useApp = () => {
@@ -95,6 +114,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [sales, setSales] = useState<Sale[]>([]);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
+  const [expenseHeads, setExpenseHeads] = useState<ExpenseHead[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [electronReady, setElectronReady] = useState(false);
 
@@ -466,6 +487,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await FirebaseService.deleteStaff(id, userId);
   };
 
+  const addExpenseHead = async (expenseHead: Omit<ExpenseHead, 'id'>) => {
+    return await FirebaseService.addExpenseHead(expenseHead, userId);
+  };
+
+  const updateExpenseHead = async (id: string, expenseHead: Partial<ExpenseHead>) => {
+    await FirebaseService.updateExpenseHead(id, expenseHead, userId);
+  };
+
+  const deleteExpenseHead = async (id: string) => {
+    await FirebaseService.deleteExpenseHead(id, userId);
+  };
+
+  // Expense functions
+  const addExpense = async (expense: Omit<Expense, 'id'>) => {
+    return await FirebaseService.addExpense(expense, userId);
+  };
+
+  const updateExpense = async (id: string, expense: Partial<Expense>) => {
+    await FirebaseService.updateExpense(id, expense, userId);
+  };
+
+  const deleteExpense = async (id: string) => {
+    await FirebaseService.deleteExpense(id, userId);
+  };
+
+  // Subscribe to expense heads
+  useEffect(() => {
+    if (userId) {
+      const unsubscribe = FirebaseService.subscribeToExpenseHeads((data) => {
+        setExpenseHeads(data);
+      }, userId);
+      return () => unsubscribe();
+    }
+  }, [userId]);
+
+  // Subscribe to expenses
+  useEffect(() => {
+    if (userId) {
+      const unsubscribe = FirebaseService.subscribeToExpenses((data) => {
+        // Sort expenses by date (newest first)
+        const sortedExpenses = [...data].sort((a, b) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        setExpenses(sortedExpenses);
+      }, userId);
+      return () => unsubscribe();
+    }
+  }, [userId]);
+
   return (
     <AppContext.Provider
       value={{
@@ -477,6 +547,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sales,
         stockMovements,
         staff,
+        expenseHeads,
+        expenses,
         loading,
         addProduct,
         updateProduct,
@@ -496,6 +568,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addStaff,
         updateStaff,
         deleteStaff,
+        addExpenseHead,
+        updateExpenseHead,
+        deleteExpenseHead,
+        addExpense,
+        updateExpense,
+        deleteExpense,
         addStockMovement,
         getSaleItems
       }}

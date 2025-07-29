@@ -167,3 +167,19 @@ export interface Staff {
   status: 'active' | 'resigned';
   createdAt: string;
 }
+
+export interface ExpenseHead {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface Expense {
+  id: string;
+  date: string;
+  category: string;
+  amount: number;
+  paymentMethod: string;
+  description?: string;
+  createdAt: string;
+}
