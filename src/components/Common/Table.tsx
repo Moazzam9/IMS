@@ -14,9 +14,9 @@ interface TableProps {
 
 const Table: React.FC<TableProps> = ({ columns, data, className = '' }) => {
   return (
-    <div className={`overflow-x-auto ${className}`}>
+    <div className={`overflow-x-auto w-full ${className}`}>
       <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-nihal-blue">
+        <thead className="bg-nihal-blue sticky top-0 z-10">
           <tr>
             {columns.map((column) => (
               <th
@@ -32,7 +32,7 @@ const Table: React.FC<TableProps> = ({ columns, data, className = '' }) => {
           {data.map((row, rowIndex) => (
             <tr key={`row-${rowIndex}`} className="hover:bg-gray-50">
               {columns.map((column, colIndex) => (
-                <td key={`${rowIndex}-${column.key}-${colIndex}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td key={`${rowIndex}-${column.key}-${colIndex}`} className="px-6 py-4 text-sm text-gray-900">
                   {column.render ? column.render(row[column.key], row, rowIndex) : row[column.key]}
                 </td>
               ))}

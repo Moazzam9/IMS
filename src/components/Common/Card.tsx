@@ -10,7 +10,7 @@ interface CardProps {
 const Card: React.FC<CardProps> = ({ children, title, className = '', onClick }) => {
   return (
     <div 
-      className={`bg-white rounded-lg shadow-sm border border-nihal-silver ${className}`}
+      className={`bg-white rounded-lg shadow-sm border border-nihal-silver w-full ${className}`}
       onClick={onClick}
     >
       {title && (
@@ -18,7 +18,7 @@ const Card: React.FC<CardProps> = ({ children, title, className = '', onClick })
           <h3 className="text-lg font-semibold text-nihal-blue">{title}</h3>
         </div>
       )}
-      <div className="p-6">
+      <div className="p-6 overflow-x-auto">
         {children}
       </div>
     </div>

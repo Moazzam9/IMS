@@ -1,0 +1,25 @@
+directories:
+  output: release
+  buildResources: public
+appId: com.nihalbatteryhouse
+productName: Nihal Battery House & Free Oil Change
+files:
+  - filter:
+      - dist/**/*
+      - electron.cjs
+      - preload.js
+      - package.json
+win:
+  target: nsis
+  icon: public/favicon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Nihal Battery House & Free Oil Change
+  installerIcon: public/favicon.ico
+  uninstallerIcon: public/favicon.ico
+forceCodeSigning: false
+publish: null
+electronVersion: 23.1.0

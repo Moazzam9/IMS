@@ -606,7 +606,7 @@ const SalesList: React.FC = () => {
         </Button>
       </div>
 
-      <Card>
+      <Card className="mb-6">
         <div className="p-4 border-b">
           <SearchBar
             placeholder="Search sales..."
@@ -626,11 +626,13 @@ const SalesList: React.FC = () => {
             <span className="ml-2 text-gray-600">Loading sales...</span>
           </div>
         ) : (
-          <Table
-            key={`sales-${filteredSales.length}`}
-            columns={columns}
-            data={filteredSales}
-          />
+          <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
+            <Table
+              key={`sales-${filteredSales.length}`}
+              columns={columns}
+              data={filteredSales}
+            />
+          </div>
         )}
       </Card>
 
