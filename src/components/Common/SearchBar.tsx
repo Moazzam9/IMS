@@ -26,6 +26,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
+    // Ensure we're passing the raw value without type conversion
     onSearch(value, activeFilter);
   };
 

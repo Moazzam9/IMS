@@ -824,6 +824,13 @@ const SalesList: React.FC = () => {
                         onSearch={(term, filter) => {
                           // Create a filtered list of products for this specific item
                           const matchingProducts = products.filter(product => {
+                            if (!term) return false;
+                            
+                            // Special handling for code search
+                            if (filter === 'code') {
+                              return product.code.toLowerCase().includes(term.toLowerCase());
+                            }
+                            
                             const value = product[filter as keyof typeof product];
                             if (typeof value === 'string') {
                               return value.toLowerCase().includes(term.toLowerCase());
@@ -853,7 +860,7 @@ const SalesList: React.FC = () => {
                       <option value="">Select Product</option>
                       {products.map((product) => (
                         <option key={product.id} value={product.id}>
-                          {product.name}
+                          {product.code} - {product.name}
                         </option>
                       ))}
                     </select>
