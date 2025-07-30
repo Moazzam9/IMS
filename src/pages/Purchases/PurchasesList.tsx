@@ -492,9 +492,13 @@ const PurchasesList: React.FC = () => {
                             return false;
                           });
                           
-                          // Auto-select if there's only one match
-                          if (matchingProducts.length === 1 && term) {
+                          // Auto-select if there are matches
+                          if (matchingProducts.length > 0 && term) {
+                            // Select the first matching product
                             updatePurchaseItem(index, 'productId', matchingProducts[0].id);
+                          } else if (term && matchingProducts.length === 0) {
+                            // Clear selection if no matches
+                            updatePurchaseItem(index, 'productId', '');
                           }
                         }}
                         filterOptions={[
