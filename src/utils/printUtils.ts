@@ -53,13 +53,84 @@ export const getCompanyInfo = (): CompanyInfo => {
  * Get print settings from localStorage
  * @returns PrintSettings object with default values if not found
  */
+/**
+ * Direct print function that works across different browsers
+ * @param contentRef - Reference to the content to print
+ * @param documentTitle - Title for the print document
+ */
+export const directPrint = (contentRef: React.RefObject<HTMLElement>, documentTitle: string): void => {
+  if (!contentRef.current) {
+    console.error('Print content reference is null');
+    return;
+  }
+
+  try {
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      console.error('Could not open print window - popup blocked?');
+      alert('Print failed. Please allow popups for this site.');
+      return;
+    }
+
+    // Get the HTML content
+    const printContent = contentRef.current.innerHTML;
+
+    // Write the content to the new window
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${documentTitle}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 0; 
+              padding: 20px; 
+            }
+            @media print {
+              body { 
+                margin: 0; 
+                padding: 0; 
+              }
+            }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          ${printContent}
+          <script>
+            // Auto-print when loaded
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                setTimeout(function() {
+                  window.close();
+                }, 100);
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+  } catch (error) {
+    console.error('Error during direct print:', error);
+    alert('Print failed. Please try again.');
+  }
+};
+
 export const getPrintSettings = (): PrintSettings => {
   const defaultSettings: PrintSettings = {
     showLogo: true,
     showTaxId: true,
     showSignature: true,
     footerText: 'Thank you for your business!',
-    paperSize: 'a4'
+    paperSize: 'thermal'
   };
 
   try {

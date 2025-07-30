@@ -352,11 +352,11 @@ const PurchasesList: React.FC = () => {
               setSearchTerm(term);
               setSearchFilter(filter);
             }}
-            filterOptions={[
-              { key: 'invoiceNumber', label: 'Invoice #' },
-              { key: 'supplierName', label: 'Supplier' },
-              { key: 'purchaseDate', label: 'Date' },
-              { key: 'status', label: 'Status' }
+            filters={[
+              { value: 'invoiceNumber', label: 'Invoice #' },
+              { value: 'supplierName', label: 'Supplier' },
+              { value: 'purchaseDate', label: 'Date' },
+              { value: 'status', label: 'Status' }
             ]}
           />
         </div>
@@ -501,9 +501,9 @@ const PurchasesList: React.FC = () => {
                             updatePurchaseItem(index, 'productId', '');
                           }
                         }}
-                        filterOptions={[
-                          { key: 'name', label: 'Name' },
-                          { key: 'code', label: 'Code' }
+                        filters={[
+                          { value: 'name', label: 'Name' },
+                          { value: 'code', label: 'Code' }
                         ]}
                       />
                     </div>

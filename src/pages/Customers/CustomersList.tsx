@@ -160,12 +160,12 @@ const CustomersList: React.FC = () => {
               setSearchTerm(term);
               setSearchFilter(filter);
             }}
-            filterOptions={[
-              { key: 'name', label: 'Name' },
-              { key: 'code', label: 'Code' },
-              { key: 'phone', label: 'Phone' },
-              { key: 'email', label: 'Email' },
-              { key: 'address', label: 'Address' }
+            filters={[
+              { value: 'name', label: 'Name' },
+              { value: 'code', label: 'Code' },
+              { value: 'phone', label: 'Phone' },
+              { value: 'email', label: 'Email' },
+              { value: 'address', label: 'Address' }
             ]}
           />
         </div>

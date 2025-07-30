@@ -16,6 +16,7 @@ import StockManagement from './pages/Stock/StockManagement';
 import ReportsPage from './pages/Reports/ReportsPage';
 import SettingsPage from './pages/Settings/SettingsPage';
 import OldBatteriesList from './pages/OldBatteries/OldBatteriesList';
+import OldBatterySales from './pages/OldBatteries/OldBatterySales';
 import { StaffList } from './pages/Staff';
 import { AddExpense, SearchReport, ExpenseHead } from './pages/Expense';
 
@@ -29,7 +30,8 @@ const AppRoutes: React.FC = () => {
       <Route path="/purchases" element={<PurchasesList />} />
       <Route path="/sales" element={<SalesList />} />
       <Route path="/stock" element={<StockManagement />} />
-      <Route path="/old-batteries" element={<OldBatteriesList />} />
+      <Route path="/old-batteries/stock" element={<OldBatteriesList />} />
+      <Route path="/old-batteries/sales" element={<OldBatterySales />} />
       <Route path="/staff" element={<StaffList />} />
       <Route path="/reports" element={<ReportsPage />} />
       <Route path="/settings" element={<SettingsPage />} />

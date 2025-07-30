@@ -208,10 +208,10 @@ const ProductsList: React.FC = () => {
               setSearchTerm(term);
               setSearchFilter(filter);
             }}
-            filterOptions={[
-              { key: 'name', label: 'Name' },
-              { key: 'code', label: 'Code' },
-              { key: 'category', label: 'Category' }
+            filters={[
+              { value: 'name', label: 'Name' },
+              { value: 'code', label: 'Code' },
+              { value: 'category', label: 'Category' }
             ]}
           />
         </div>

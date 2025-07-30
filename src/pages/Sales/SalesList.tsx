@@ -25,7 +25,7 @@ const SalesList: React.FC = () => {
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSaleForPrint, setSelectedSaleForPrint] = useState<Sale | null>(null);
-  const [isLoadingInvoice, setIsLoadingInvoice] = useState(false);
+  const [isLoadingInvoice, setIsLoadingInvoice] = useState(true);
   const isClosingRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFilter, setSearchFilter] = useState('invoiceNumber');
@@ -66,6 +66,17 @@ const SalesList: React.FC = () => {
   useEffect(() => {
     console.log('selectedSaleForPrint state changed:', selectedSaleForPrint ? `Sale ID: ${selectedSaleForPrint.id}` : 'null');
   }, [selectedSaleForPrint]);
+  
+  const handleClosePrintModal = () => {
+    console.log('Closing invoice print modal');
+    // Set loading to true for next time
+    setIsLoadingInvoice(true);
+    // Small delay to ensure the modal is closed before clearing the selected sale
+    setTimeout(() => {
+      setSelectedSaleForPrint(null);
+      console.log('Invoice print data cleared');
+    }, 100);
+  };
 
   // Monitor filtered sales changes
   useEffect(() => {
@@ -574,13 +585,17 @@ const SalesList: React.FC = () => {
                   items: saleItems
                 };
 
+                // First set the selected sale, then set loading to false after a short delay
                 setSelectedSaleForPrint(saleWithItems);
+                // Use a short timeout to ensure the component is mounted before changing loading state
+                setTimeout(() => {
+                  setIsLoadingInvoice(false);
+                }, 300);
               } catch (error) {
                 console.error('Error loading sale items for printing:', error);
                 // Fallback to current sale data
                 const latestSale = sales.find(s => s.id === sale.id);
                 setSelectedSaleForPrint(latestSale || sale);
-              } finally {
                 setIsLoadingInvoice(false);
               }
             }}
@@ -617,7 +632,7 @@ const SalesList: React.FC = () => {
             placeholder="Search sales..."
             onSearch={setSearchTerm}
             onFilterChange={setSearchFilter}
-            filterOptions={[
+            filters={[
               { value: 'invoiceNumber', label: 'Invoice Number' },
               { value: 'customerName', label: 'Customer Name' },
               { value: 'saleDate', label: 'Sale Date' },
@@ -849,9 +864,9 @@ const SalesList: React.FC = () => {
                             updateSaleItem(index, 'productId', '');
                           }
                         }}
-                        filterOptions={[
-                          { key: 'name', label: 'Name' },
-                          { key: 'code', label: 'Code' }
+                        filters={[
+                          { value: 'name', label: 'Name' },
+                          { value: 'code', label: 'Code' }
                         ]}
                       />
                     </div>
@@ -993,17 +1008,7 @@ const SalesList: React.FC = () => {
           sale={selectedSaleForPrint}
           customer={customers.find(c => c.id === selectedSaleForPrint.customerId)}
           products={products}
-          onClose={() => {
-            console.log('Closing invoice print - clearing state');
-            isClosingRef.current = true;
-            setSelectedSaleForPrint(null);
-            setIsLoadingInvoice(false);
-            // Reset the closing flag after a short delay
-            setTimeout(() => {
-              isClosingRef.current = false;
-              console.log('State cleared, selectedSaleForPrint should be null');
-            }, 200);
-          }}
+          onClose={handleClosePrintModal}
           isLoading={isLoadingInvoice}
         />
       )}

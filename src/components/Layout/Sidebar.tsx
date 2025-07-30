@@ -16,11 +16,13 @@ import {
   ChevronUp,
   PlusCircle,
   Search,
-  List
+  List,
+  Battery
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
   const [expenseDropdownOpen, setExpenseDropdownOpen] = useState(false);
+  const [oldBatteriesDropdownOpen, setOldBatteriesDropdownOpen] = useState(false);
   
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -116,6 +118,53 @@ const Sidebar: React.FC = () => {
                   >
                     <List size={16} />
                     <span className="font-medium">Expense Head</span>
+                  </NavLink>
+                </li>
+              </ul>
+            )}
+          </li>
+          
+          {/* Old Batteries Section with Dropdown */}
+          <li>
+            <button
+              onClick={() => setOldBatteriesDropdownOpen(!oldBatteriesDropdownOpen)}
+              className="flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-50 hover:text-nihal-blue"
+            >
+              <div className="flex items-center space-x-3">
+                <Battery size={20} />
+                <span className="font-medium">Old Batteries</span>
+              </div>
+              {oldBatteriesDropdownOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            
+            {oldBatteriesDropdownOpen && (
+              <ul className="mt-1 ml-7 space-y-1">
+                <li>
+                  <NavLink
+                    to="/old-batteries/stock"
+                    className={({ isActive }) =>
+                      `flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${isActive
+                        ? 'bg-nihal-light-blue text-nihal-blue border-r-2 border-nihal-yellow'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-nihal-blue'
+                      }`
+                    }
+                  >
+                    <Boxes size={16} />
+                    <span className="font-medium">Old Battery Stock</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/old-batteries/sales"
+                    className={({ isActive }) =>
+                      `flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${isActive
+                        ? 'bg-nihal-light-blue text-nihal-blue border-r-2 border-nihal-yellow'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-nihal-blue'
+                      }`
+                    }
+                  >
+                    <TrendingUp size={16} />
+                    <span className="font-medium">Old Battery Sales</span>
                   </NavLink>
                 </li>
               </ul>

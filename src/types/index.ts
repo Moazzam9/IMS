@@ -150,6 +150,12 @@ export interface OldBattery {
   weight: number;
   ratePerKg: number;
   deductionAmount: number;
+  discount: number;
+  amountPaid: number;
+  invoiceNumber: string;
+  customerName?: string;
+  saleDate: string;
+  status: 'completed' | 'pending';
   saleId: string;
   saleItemId: string;
   createdAt: string;

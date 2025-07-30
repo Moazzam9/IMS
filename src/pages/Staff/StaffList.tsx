@@ -188,12 +188,12 @@ const StaffList: React.FC = () => {
               setSearchTerm(term);
               setSearchFilter(filter);
             }}
-            filterOptions={[
-              { key: 'fullName', label: 'Name' },
-              { key: 'cnic', label: 'CNIC' },
-              { key: 'phone', label: 'Phone' },
-              { key: 'category', label: 'Category' },
-              { key: 'status', label: 'Status' }
+            filters={[
+              { value: 'fullName', label: 'Name' },
+              { value: 'cnic', label: 'CNIC' },
+              { value: 'phone', label: 'Phone' },
+              { value: 'category', label: 'Category' },
+              { value: 'status', label: 'Status' }
             ]}
           />
         </div>

@@ -2,25 +2,37 @@ import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 
 interface FilterOption {
-  key: string;
+  key?: string;
+  value?: string;
   label: string;
 }
 
 interface SearchBarProps {
   placeholder?: string;
   onSearch: (searchTerm: string, activeFilter: string) => void;
-  filterOptions: FilterOption[];
+  filterOptions?: FilterOption[];
+  filters?: FilterOption[];
+  onFilterChange?: (filter: string) => void;
   className?: string;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = 'Search...',
   onSearch,
-  filterOptions,
+  filterOptions = [],
+  filters = [],
+  onFilterChange,
   className = '',
 }) => {
+  // Use either filterOptions or filters, with filters taking precedence
+  const allFilters = filters.length > 0 ? filters : filterOptions;
+  
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState(filterOptions[0]?.key || '');
+  const [activeFilter, setActiveFilter] = useState(
+    allFilters.length > 0 
+      ? (allFilters[0]?.key || allFilters[0]?.value || '') 
+      : ''
+  );
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,6 +45,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const handleFilterChange = (filterKey: string) => {
     setActiveFilter(filterKey);
     onSearch(searchTerm, filterKey);
+    if (onFilterChange) {
+      onFilterChange(filterKey);
+    }
     setIsFilterOpen(false);
   };
 
@@ -52,28 +67,31 @@ const SearchBar: React.FC<SearchBarProps> = ({
           </div>
         </div>
         
-        {filterOptions.length > 0 && (
+        {allFilters.length > 0 && (
           <div className="relative ml-2">
           <button
             type="button"
             className="inline-flex justify-center w-full px-4 py-2 text-sm font-medium text-nihal-blue bg-white border border-nihal-yellow rounded-md shadow-sm hover:bg-nihal-yellow hover:text-white focus:outline-none focus:ring-2 focus:ring-nihal-yellow"
             onClick={() => setIsFilterOpen(!isFilterOpen)}
           >
-            {filterOptions.find(option => option.key === activeFilter)?.label || 'Filter'}
+            {allFilters.find(option => (option.key === activeFilter || option.value === activeFilter))?.label || 'Filter'}
           </button>
             
             {isFilterOpen && (
               <div className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-nihal-yellow ring-opacity-50 focus:outline-none">
                 <div className="py-1">
-                  {filterOptions.map((option) => (
-                    <button
-                      key={option.key}
-                      className={`block w-full px-4 py-2 text-left text-sm ${activeFilter === option.key ? 'bg-nihal-yellow text-white' : 'text-nihal-blue'} hover:bg-nihal-yellow hover:text-white`}
-                      onClick={() => handleFilterChange(option.key)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+                  {allFilters.map((option) => {
+                    const optionValue = option.key || option.value || '';
+                    return (
+                      <button
+                        key={optionValue}
+                        className={`block w-full px-4 py-2 text-left text-sm ${activeFilter === optionValue ? 'bg-nihal-yellow text-white' : 'text-nihal-blue'} hover:bg-nihal-yellow hover:text-white`}
+                        onClick={() => handleFilterChange(optionValue)}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

@@ -153,12 +153,12 @@ const SuppliersList: React.FC = () => {
               setSearchTerm(term);
               setSearchFilter(filter);
             }}
-            filterOptions={[
-              { key: 'name', label: 'Name' },
-              { key: 'code', label: 'Code' },
-              { key: 'contactPerson', label: 'Contact Person' },
-              { key: 'phone', label: 'Phone' },
-              { key: 'email', label: 'Email' }
+            filters={[
+              { value: 'name', label: 'Name' },
+              { value: 'code', label: 'Code' },
+              { value: 'contactPerson', label: 'Contact Person' },
+              { value: 'phone', label: 'Phone' },
+              { value: 'email', label: 'Email' }
             ]}
           />
         </div>

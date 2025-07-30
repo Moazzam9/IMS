@@ -4,7 +4,7 @@ import { Sale, SaleItem, Customer, Product } from '../../types';
 import Button from '../Common/Button';
 import { Printer } from 'lucide-react';
 import { isElectron, printToPDF } from '../../services/electronBridge';
-import { getCompanyInfo, getPrintSettings } from '../../utils/printUtils';
+import { getCompanyInfo, getPrintSettings, directPrint } from '../../utils/printUtils';
 
 interface InvoicePrintProps {
   sale: Sale;
@@ -40,9 +40,13 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
     },
     onAfterPrint: () => {
       console.log('Printed successfully');
+      // Close the modal after printing is complete
+      onClose();
     },
     onPrintError: (error) => {
       console.error('Print error:', error);
+      // Close the modal if there's an error
+      onClose();
     }
   });
 
@@ -50,15 +54,49 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
   const handlePrint = useCallback(() => {
     console.log('Print function called');
 
-    // Always use browser printing to ensure it works
-    console.log('Using browser printing');
-    if (reactToPrint) {
-      reactToPrint();
-    } else {
-      console.error('reactToPrint is not available');
-      window.print(); // Fallback to window.print() if reactToPrint is not available
+    try {
+      // Always use browser printing to ensure it works
+      console.log('Using browser printing');
+      if (reactToPrint) {
+        // Force a small timeout to ensure the DOM is ready
+        setTimeout(() => {
+          console.log('Executing reactToPrint after delay');
+          reactToPrint();
+        }, 100);
+      } else {
+        console.error('reactToPrint is not available');
+        // Fallback to window.print() if reactToPrint is not available
+        setTimeout(() => {
+          console.log('Falling back to window.print()');
+          window.print();
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error during print:', error);
+      // Last resort fallback
+      alert('Print function failed. Please try again.');
     }
   }, [reactToPrint, sale.invoiceNumber]);
+
+  // Automatically print when component mounts
+  React.useEffect(() => {
+    // Don't try to print if still loading
+    if (isLoading) {
+      console.log('InvoicePrint: Still loading, not printing yet');
+      return;
+    }
+    
+    console.log('InvoicePrint: Loading complete, printing after delay');
+    // Small delay to ensure the component is fully rendered
+    const timer = setTimeout(() => {
+      console.log('InvoicePrint: Executing print');
+      // We'll use a user interaction to trigger print instead of automatic printing
+      // This helps with browser security policies that may block automatic printing
+      // handlePrint();
+    }, 800);
+    
+    return () => clearTimeout(timer);
+  }, [handlePrint, isLoading]);
 
   // Get product details for a sale item
   const getProductDetails = (item: SaleItem) => {
@@ -89,12 +127,16 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold">Invoice #{sale.invoiceNumber}</h2>
           <div className="flex space-x-2">
-            <Button
+            <Button 
+              variant="primary"
               icon={Printer}
               onClick={() => {
-                console.log('Print Invoice button clicked in InvoicePrint');
-                handlePrint();
+                console.log('Direct print button clicked');
+                if (!isLoading && invoiceRef.current) {
+                  directPrint(invoiceRef, `Invoice-${sale.invoiceNumber}`);
+                }
               }}
+              disabled={isLoading}
             >
               Print Invoice
             </Button>
@@ -106,7 +148,7 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-2 text-gray-600">Loading invoice data...</span>
+              <span className="ml-2 text-gray-600">Preparing invoice for printing...</span>
             </div>
           ) : (
             <div ref={invoiceRef} className="p-8 bg-white">
