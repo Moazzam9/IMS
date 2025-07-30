@@ -457,18 +457,45 @@ const PurchasesList: React.FC = () => {
             </div>
             
             {/* Column Headers */}
-            <div className="grid grid-cols-5 gap-3 p-2 bg-gray-200 rounded-lg font-medium text-sm mb-2">
-              <div>Product</div>
-              <div>Quantity</div>
-              <div>Rate</div>
-              <div>Total</div>
-              <div>Action</div>
+            <div className="grid grid-cols-12 gap-3 p-2 bg-gray-200 rounded-lg font-medium text-sm mb-2">
+              <div className="col-span-5">Product</div>
+              <div className="col-span-2">Quantity</div>
+              <div className="col-span-2">Rate</div>
+              <div className="col-span-2">Total</div>
+              <div className="col-span-1">Action</div>
             </div>
             
             <div className="space-y-3">
               {purchaseItems.map((item, index) => (
-                <div key={`purchase-item-${index}-${item.productId || 'new'}`} className="grid grid-cols-5 gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div>
+                <div key={`purchase-item-${index}-${item.productId || 'new'}`} className="grid grid-cols-12 gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="col-span-5">
+                    <div className="mb-2 w-full">
+                      <SearchBar
+                        placeholder="Search product..."
+                        className="w-full"
+                        onSearch={(term, filter) => {
+                          // Create a filtered list of products for this specific item
+                          const matchingProducts = products.filter(product => {
+                            const value = product[filter as keyof typeof product];
+                            if (typeof value === 'string') {
+                              return value.toLowerCase().includes(term.toLowerCase());
+                            } else if (typeof value === 'number') {
+                              return value.toString().includes(term);
+                            }
+                            return false;
+                          });
+                          
+                          // Auto-select if there's only one match
+                          if (matchingProducts.length === 1 && term) {
+                            updatePurchaseItem(index, 'productId', matchingProducts[0].id);
+                          }
+                        }}
+                        filterOptions={[
+                          { key: 'name', label: 'Name' },
+                          { key: 'code', label: 'Code' }
+                        ]}
+                      />
+                    </div>
                     {item.productId === 'new_product' ? (
                       <div className="space-y-2 p-2 border border-blue-200 rounded-md bg-blue-50">
                         <div className="flex justify-between items-center">
@@ -574,7 +601,7 @@ const PurchasesList: React.FC = () => {
                       </select>
                     )}
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <input
                       type="number"
                       placeholder="Qty"
@@ -584,7 +611,7 @@ const PurchasesList: React.FC = () => {
                       required
                     />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <input
                       type="number"
                       step="0.01"
@@ -604,7 +631,7 @@ const PurchasesList: React.FC = () => {
                       required
                     />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <input
                       type="number"
                       step="0.01"
@@ -614,7 +641,7 @@ const PurchasesList: React.FC = () => {
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-1">
                     <button
                       type="button"
                       onClick={() => removePurchaseItem(index)}

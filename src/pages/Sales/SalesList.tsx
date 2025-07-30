@@ -29,8 +29,12 @@ const SalesList: React.FC = () => {
   const isClosingRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFilter, setSearchFilter] = useState('invoiceNumber');
+  // Individual product search is now handled at the item level
+  const [saleItems, setSaleItems] = useState<(Omit<SaleItem, 'id' | 'saleId'> & { oldBatteryData?: Omit<OldBattery, 'id' | 'saleId' | 'saleItemId' | 'createdAt'> })[]>([]);
 
   // Filter sales based on search term and filter
+  // Product filtering is now handled at the individual item level
+
   const filteredSales = useMemo(() => {
     if (!searchTerm) return sales;
 
@@ -48,6 +52,7 @@ const SalesList: React.FC = () => {
       }
 
       const value = sale[searchFilter as keyof Sale];
+  
       if (typeof value === 'string') {
         return value.toLowerCase().includes(searchTerm.toLowerCase());
       } else if (typeof value === 'number') {
@@ -102,7 +107,6 @@ const SalesList: React.FC = () => {
       }));
     }
   }, [isModalOpen, editingSale, sales]);
-  const [saleItems, setSaleItems] = useState<(Omit<SaleItem, 'id' | 'saleId'> & { oldBatteryData?: Omit<OldBattery, 'id' | 'saleId' | 'saleItemId' | 'createdAt'> })[]>([]);
 
   // Calculate total discount from individual item discounts
   const calculateTotalDiscount = (items: Omit<SaleItem, 'id' | 'saleId'>[]) => {
@@ -796,21 +800,50 @@ const SalesList: React.FC = () => {
                 Add Item
               </Button>
             </div>
+            
+            {/* Global product search removed as we'll have individual search bars */}
 
             <div className="space-y-3">
               {/* Column Headers */}
-              <div className="grid grid-cols-6 gap-3 p-2 bg-gray-200 rounded-lg font-medium text-sm">
-                <div>Item Name</div>
-                <div>Quantity</div>
-                <div>Rate</div>
-                <div>Discount</div>
-                <div>Total</div>
-                <div></div>
+              <div className="grid grid-cols-12 gap-3 p-2 bg-gray-200 rounded-lg font-medium text-sm">
+                <div className="col-span-4">Item Name</div>
+                <div className="col-span-2">Quantity</div>
+                <div className="col-span-2">Rate</div>
+                <div className="col-span-1">Discount</div>
+                <div className="col-span-2">Total</div>
+                <div className="col-span-1"></div>
               </div>
 
               {saleItems.map((item, index) => (
-                <div key={index} className="grid grid-cols-6 gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex flex-col">
+                <div key={index} className="grid grid-cols-12 gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex flex-col col-span-4">
+                    <div className="mb-2 w-full">
+                      <SearchBar
+                        placeholder="Search product..."
+                        className="w-full"
+                        onSearch={(term, filter) => {
+                          // Create a filtered list of products for this specific item
+                          const matchingProducts = products.filter(product => {
+                            const value = product[filter as keyof typeof product];
+                            if (typeof value === 'string') {
+                              return value.toLowerCase().includes(term.toLowerCase());
+                            } else if (typeof value === 'number') {
+                              return value.toString().includes(term);
+                            }
+                            return false;
+                          });
+                          
+                          // Auto-select if there's only one match
+                          if (matchingProducts.length === 1 && term) {
+                            updateSaleItem(index, 'productId', matchingProducts[0].id);
+                          }
+                        }}
+                        filterOptions={[
+                          { key: 'name', label: 'Name' },
+                          { key: 'code', label: 'Code' }
+                        ]}
+                      />
+                    </div>
                     <select
                       value={item.productId}
                       onChange={(e) => updateSaleItem(index, 'productId', e.target.value)}
@@ -853,7 +886,7 @@ const SalesList: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <input
                       type="number"
                       placeholder="Qty"
@@ -863,7 +896,7 @@ const SalesList: React.FC = () => {
                       required
                     />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <input
                       type="number"
                       step="0.01"
@@ -874,7 +907,7 @@ const SalesList: React.FC = () => {
                       required
                     />
                   </div>
-                  <div>
+                  <div className="col-span-1">
                     <input
                       type="number"
                       step="0.01"
@@ -884,7 +917,7 @@ const SalesList: React.FC = () => {
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <input
                       type="number"
                       step="0.01"
@@ -894,7 +927,7 @@ const SalesList: React.FC = () => {
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-1">
                     <div className="flex items-center space-x-2 justify-end">
                       <button
                         type="button"
