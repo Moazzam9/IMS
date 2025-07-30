@@ -174,9 +174,10 @@ const SalesList: React.FC = () => {
       // Calculate totals
       const totalAmount = saleItems.reduce((sum, item) => sum + item.total, 0);
       const totalDiscount = saleItems.reduce((sum, item) => {
+        // Only include regular discounts, not old battery deductions
+        // as they are already applied to the item total
         const itemDiscount = item.discount || 0;
-        const oldBatteryDeduction = item.oldBatteryData?.deductionAmount || 0;
-        return sum + itemDiscount + oldBatteryDeduction;
+        return sum + itemDiscount;
       }, 0);
       const netAmount = totalAmount - totalDiscount;
       const amountPaid = parseFloat(formData.amountPaid.toString()) || 0;
