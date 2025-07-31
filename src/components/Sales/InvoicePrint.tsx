@@ -58,25 +58,31 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
       // Always use browser printing to ensure it works
       console.log('Using browser printing');
       if (reactToPrint) {
-        // Force a small timeout to ensure the DOM is ready
+        // Force a longer timeout to ensure the DOM is ready
         setTimeout(() => {
           console.log('Executing reactToPrint after delay');
           reactToPrint();
-        }, 100);
+        }, 500); // Increased from 100ms to 500ms for reliability
       } else {
         console.error('reactToPrint is not available');
         // Fallback to window.print() if reactToPrint is not available
         setTimeout(() => {
           console.log('Falling back to window.print()');
           window.print();
-        }, 100);
+          // Ensure we close the modal even if print dialog is canceled
+          setTimeout(() => {
+            onClose();
+          }, 1000);
+        }, 500);
       }
     } catch (error) {
       console.error('Error during print:', error);
       // Last resort fallback
       alert('Print function failed. Please try again.');
+      // Make sure we close the modal even if there's an error
+      onClose();
     }
-  }, [reactToPrint, sale.invoiceNumber]);
+  }, [reactToPrint, sale.invoiceNumber, onClose]);
 
   // Automatically print when component mounts
   React.useEffect(() => {

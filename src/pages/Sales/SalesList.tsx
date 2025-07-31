@@ -29,6 +29,7 @@ const SalesList: React.FC = () => {
   const isClosingRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFilter, setSearchFilter] = useState('invoiceNumber');
+  const [safetyTimer, setSafetyTimer] = useState<NodeJS.Timeout | null>(null);
   // Individual product search is now handled at the item level
   const [saleItems, setSaleItems] = useState<(Omit<SaleItem, 'id' | 'saleId'> & { oldBatteryData?: Omit<OldBattery, 'id' | 'saleId' | 'saleItemId' | 'createdAt'> })[]>([]);
 
@@ -69,6 +70,11 @@ const SalesList: React.FC = () => {
   
   const handleClosePrintModal = () => {
     console.log('Closing invoice print modal');
+    // Clear the safety timer if it exists
+    if (safetyTimer) {
+      clearTimeout(safetyTimer);
+      setSafetyTimer(null);
+    }
     // Set the closing flag to prevent new print attempts during closing
     isClosingRef.current = true;
     // Set loading to true for next time
@@ -589,6 +595,15 @@ const SalesList: React.FC = () => {
 
                 console.log('Print button clicked for sale:', sale);
                 setIsLoadingInvoice(true);
+
+                // Set a safety timeout to reset loading state after 10 seconds
+                // in case something goes wrong and the state is never reset
+                if (safetyTimer) clearTimeout(safetyTimer);
+                const timer = setTimeout(() => {
+                  console.log('Safety timeout triggered - resetting loading state');
+                  setIsLoadingInvoice(false);
+                }, 10000);
+                setSafetyTimer(timer);
 
                 // Get the latest sale data with items and old battery data
                 try {
