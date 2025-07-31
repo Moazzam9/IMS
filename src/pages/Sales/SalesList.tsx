@@ -75,20 +75,20 @@ const SalesList: React.FC = () => {
       clearTimeout(safetyTimer);
       setSafetyTimer(null);
     }
+    
     // Set the closing flag to prevent new print attempts during closing
     isClosingRef.current = true;
-    // Set loading to true for next time
-    setIsLoadingInvoice(true);
-    // Small delay to ensure the modal is closed before clearing the selected sale
+    
+    // Clear the selected sale immediately
+    setSelectedSaleForPrint(null);
+    console.log('Invoice print data cleared');
+    
+    // Reset the loading state
+    setIsLoadingInvoice(false);
+    
+    // Reset the closing flag after a short delay
     setTimeout(() => {
-      setSelectedSaleForPrint(null);
-      console.log('Invoice print data cleared');
-      // Reset the closing flag after a short delay
-      setTimeout(() => {
-        isClosingRef.current = false;
-        // Reset loading state for next print
-        setIsLoadingInvoice(false);
-      }, 100);
+      isClosingRef.current = false;
     }, 100);
   };
 
@@ -604,6 +604,7 @@ const SalesList: React.FC = () => {
           <div className="flex space-x-1">
             <button
               onClick={async () => {
+                // Check if modal is currently closing
                 if (isClosingRef.current) {
                   console.log('Preventing print while closing');
                   return;
@@ -618,13 +619,17 @@ const SalesList: React.FC = () => {
                 console.log('Print button clicked for sale:', sale);
                 setIsLoadingInvoice(true);
 
-                // Set a safety timeout to reset loading state after 10 seconds
+                // Clear any existing safety timer
+                if (safetyTimer) {
+                  clearTimeout(safetyTimer);
+                }
+                
+                // Set a new safety timeout to reset loading state after 5 seconds
                 // in case something goes wrong and the state is never reset
-                if (safetyTimer) clearTimeout(safetyTimer);
                 const timer = setTimeout(() => {
                   console.log('Safety timeout triggered - resetting loading state');
                   setIsLoadingInvoice(false);
-                }, 10000);
+                }, 5000);
                 setSafetyTimer(timer);
 
                 // Get the latest sale data with items and old battery data
@@ -637,12 +642,11 @@ const SalesList: React.FC = () => {
                     items: saleItems
                   };
 
-                  // First set the selected sale, then set loading to false after a short delay
+                  // Set the selected sale for print
                   setSelectedSaleForPrint(saleWithItems);
-                  // Use a short timeout to ensure the component is mounted before changing loading state
-                  setTimeout(() => {
-                    setIsLoadingInvoice(false);
-                  }, 300);
+                  
+                  // Reset loading state immediately - the InvoicePrint component handles its own loading
+                  setIsLoadingInvoice(false);
                 } catch (error) {
                   console.error('Error loading sale items for printing:', error);
                   // Fallback to current sale data

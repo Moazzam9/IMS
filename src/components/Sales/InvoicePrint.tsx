@@ -58,22 +58,16 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
       // Always use browser printing to ensure it works
       console.log('Using browser printing');
       if (reactToPrint) {
-        // Force a longer timeout to ensure the DOM is ready
-        setTimeout(() => {
-          console.log('Executing reactToPrint after delay');
-          reactToPrint();
-        }, 500); // Increased from 100ms to 500ms for reliability
+        // Print immediately without additional delay
+        console.log('Executing reactToPrint immediately');
+        reactToPrint();
       } else {
         console.error('reactToPrint is not available');
         // Fallback to window.print() if reactToPrint is not available
-        setTimeout(() => {
-          console.log('Falling back to window.print()');
-          window.print();
-          // Ensure we close the modal even if print dialog is canceled
-          setTimeout(() => {
-            onClose();
-          }, 1000);
-        }, 500);
+        console.log('Falling back to window.print()');
+        window.print();
+        // Close the modal after print dialog is shown
+        onClose();
       }
     } catch (error) {
       console.error('Error during print:', error);
@@ -84,25 +78,19 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
     }
   }, [reactToPrint, sale.invoiceNumber, onClose]);
 
-  // Automatically print when component mounts
+  // Component is ready for user to click print
   React.useEffect(() => {
     // Don't try to print if still loading
     if (isLoading) {
-      console.log('InvoicePrint: Still loading, not printing yet');
+      console.log('InvoicePrint: Still loading, not ready yet');
       return;
     }
     
-    console.log('InvoicePrint: Loading complete, printing after delay');
-    // Small delay to ensure the component is fully rendered
-    const timer = setTimeout(() => {
-      console.log('InvoicePrint: Ready for user to click print');
-      // We'll use a user interaction to trigger print instead of automatic printing
-      // This helps with browser security policies that may block automatic printing
-    }, 500);
+    console.log('InvoicePrint: Loading complete, ready for user to click print');
+    // No automatic printing - user will click the print button
     
     return () => {
-      console.log('InvoicePrint: Cleaning up timers');
-      clearTimeout(timer);
+      console.log('InvoicePrint: Component unmounting');
     };
   }, [isLoading]);
 
