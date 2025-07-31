@@ -241,8 +241,9 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
 
               {/* Footer */}
               <div className="text-center mt-3" style={{ fontSize: printSettings.paperSize === 'thermal' ? '8px' : '10px' }}>
-                <p style={{ margin: '1px 0' }}>{printSettings.footerText}</p>
-                {companyInfo.website && <p style={{ margin: '1px 0' }}>{companyInfo.website}</p>}
+                {printSettings.footerText && (
+                  <p className="whitespace-pre-line">{printSettings.footerText}</p>
+                )}
               </div>
             </div>
           )}
