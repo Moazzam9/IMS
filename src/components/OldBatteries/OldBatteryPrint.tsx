@@ -16,6 +16,14 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
   onClose,
   isLoading = false
 }) => {
+  console.log('OldBatteryPrint component mounted with invoice:', oldBattery.invoiceNumber);
+  
+  // Log when component unmounts
+  React.useEffect(() => {
+    return () => {
+      console.log('OldBatteryPrint component unmounted');
+    };
+  }, []);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   // Get company information and print settings from utility functions
@@ -33,13 +41,16 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
     onAfterPrint: () => {
       console.log('Printed successfully');
       // Close the modal after printing is complete
-      onClose();
+      setTimeout(() => {
+        onClose();
+      }, 100);
     },
     onPrintError: (error) => {
       console.error('Print error:', error);
       // Close the modal if there's an error
       onClose();
-    }
+    },
+    removeAfterPrint: true
   });
 
   // Handle print function
@@ -50,25 +61,23 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
       // Always use browser printing to ensure it works
       console.log('Using browser printing');
       if (reactToPrint) {
-        // Force a small timeout to ensure the DOM is ready
-        setTimeout(() => {
-          console.log('Executing reactToPrint after delay');
-          reactToPrint();
-        }, 100);
+        // Execute immediately without delay
+        console.log('Executing reactToPrint');
+        reactToPrint();
       } else {
         console.error('reactToPrint is not available');
         // Fallback to window.print() if reactToPrint is not available
-        setTimeout(() => {
-          console.log('Falling back to window.print()');
-          window.print();
-        }, 100);
+        console.log('Falling back to window.print()');
+        window.print();
       }
     } catch (error) {
       console.error('Error during print:', error);
       // Last resort fallback
       alert('Print function failed. Please try again.');
+      // Close the modal if there's an error
+      onClose();
     }
-  }, [reactToPrint]);
+  }, [reactToPrint, onClose]);
   
   // Automatically print when component mounts
   React.useEffect(() => {
@@ -81,14 +90,18 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
     console.log('OldBatteryPrint: Loading complete, printing after delay');
     // Small delay to ensure the component is fully rendered
     const timer = setTimeout(() => {
-      console.log('OldBatteryPrint: Executing print');
-      // We'll use a user interaction to trigger print instead of automatic printing
-      // This helps with browser security policies that may block automatic printing
-      // handlePrint();
-    }, 800);
+      console.log('OldBatteryPrint: Ready to print, triggering print function');
+      // Automatically trigger print after component is ready
+      if (reactToPrint) {
+        reactToPrint();
+      }
+    }, 1000);
     
-    return () => clearTimeout(timer);
-  }, [handlePrint, isLoading]);
+    return () => {
+      console.log('OldBatteryPrint: Cleaning up timers');
+      clearTimeout(timer);
+    };
+  }, [isLoading, reactToPrint, oldBattery.id]);
 
   // Calculate net amount
   const netAmount = (oldBattery.deductionAmount || 0) - (oldBattery.discount || 0);
@@ -105,12 +118,15 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
             <Button 
               variant="primary"
               icon={Printer}
-              onClick={() => {
-                console.log('Direct print button clicked');
-                if (!isLoading && invoiceRef.current) {
-                  directPrint(invoiceRef, `Invoice-${oldBattery.invoiceNumber}`);
-                }
-              }}
+              onClick={handlePrint}
+              disabled={isLoading}
+            >
+              Print Invoice
+            </Button>
+            <Button 
+              variant="secondary" 
+              icon={Printer}
+              onClick={() => directPrint(invoiceRef, `Invoice-${oldBattery.invoiceNumber}`)}
               disabled={isLoading}
             >
               Direct Print

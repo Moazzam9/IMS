@@ -69,12 +69,20 @@ const SalesList: React.FC = () => {
   
   const handleClosePrintModal = () => {
     console.log('Closing invoice print modal');
+    // Set the closing flag to prevent new print attempts during closing
+    isClosingRef.current = true;
     // Set loading to true for next time
     setIsLoadingInvoice(true);
     // Small delay to ensure the modal is closed before clearing the selected sale
     setTimeout(() => {
       setSelectedSaleForPrint(null);
       console.log('Invoice print data cleared');
+      // Reset the closing flag after a short delay
+      setTimeout(() => {
+        isClosingRef.current = false;
+        // Reset loading state for next print
+        setIsLoadingInvoice(false);
+      }, 100);
     }, 100);
   };
 
@@ -565,50 +573,60 @@ const SalesList: React.FC = () => {
           >
             <Trash2 size={16} />
           </button>
-          <button
-            onClick={async () => {
-              if (isClosingRef.current) {
-                console.log('Preventing print while closing');
-                return;
-              }
+          <div className="flex space-x-1">
+            <button
+              onClick={async () => {
+                if (isClosingRef.current) {
+                  console.log('Preventing print while closing');
+                  return;
+                }
+                
+                // Prevent multiple clicks
+                if (isLoadingInvoice) {
+                  console.log('Already loading invoice, ignoring click');
+                  return;
+                }
 
-              console.log('Print button clicked for sale:', sale);
-              setIsLoadingInvoice(true);
+                console.log('Print button clicked for sale:', sale);
+                setIsLoadingInvoice(true);
 
-              // Get the latest sale data with items and old battery data
-              try {
-                const saleItems = await getSaleItems(sale.id);
-                console.log('Loaded sale items for printing:', saleItems);
+                // Get the latest sale data with items and old battery data
+                try {
+                  const saleItems = await getSaleItems(sale.id);
+                  console.log('Loaded sale items for printing:', saleItems);
 
-                const saleWithItems = {
-                  ...sale,
-                  items: saleItems
-                };
+                  const saleWithItems = {
+                    ...sale,
+                    items: saleItems
+                  };
 
-                // First set the selected sale, then set loading to false after a short delay
-                setSelectedSaleForPrint(saleWithItems);
-                // Use a short timeout to ensure the component is mounted before changing loading state
-                setTimeout(() => {
+                  // First set the selected sale, then set loading to false after a short delay
+                  setSelectedSaleForPrint(saleWithItems);
+                  // Use a short timeout to ensure the component is mounted before changing loading state
+                  setTimeout(() => {
+                    setIsLoadingInvoice(false);
+                  }, 300);
+                } catch (error) {
+                  console.error('Error loading sale items for printing:', error);
+                  // Fallback to current sale data
+                  const latestSale = sales.find(s => s.id === sale.id);
+                  setSelectedSaleForPrint(latestSale || sale);
                   setIsLoadingInvoice(false);
-                }, 300);
-              } catch (error) {
-                console.error('Error loading sale items for printing:', error);
-                // Fallback to current sale data
-                const latestSale = sales.find(s => s.id === sale.id);
-                setSelectedSaleForPrint(latestSale || sale);
-                setIsLoadingInvoice(false);
-              }
-            }}
-            className="text-green-600 hover:text-green-800"
-            title="Print Invoice"
-            disabled={isLoadingInvoice}
-          >
-            {isLoadingInvoice ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-            ) : (
-              <Printer size={16} />
-            )}
-          </button>
+                  // Show error toast
+                  showToast('Error loading invoice data. Please try again.', 'error');
+                }
+              }}
+              className="text-green-600 hover:text-green-800"
+              title="Print Invoice"
+              disabled={isLoadingInvoice}
+            >
+              {isLoadingInvoice ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+              ) : (
+                <Printer size={16} />
+              )}
+            </button>
+          </div>
         </div>
       )
     }

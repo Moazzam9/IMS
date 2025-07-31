@@ -89,14 +89,16 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
     console.log('InvoicePrint: Loading complete, printing after delay');
     // Small delay to ensure the component is fully rendered
     const timer = setTimeout(() => {
-      console.log('InvoicePrint: Executing print');
+      console.log('InvoicePrint: Ready for user to click print');
       // We'll use a user interaction to trigger print instead of automatic printing
       // This helps with browser security policies that may block automatic printing
-      // handlePrint();
-    }, 800);
+    }, 500);
     
-    return () => clearTimeout(timer);
-  }, [handlePrint, isLoading]);
+    return () => {
+      console.log('InvoicePrint: Cleaning up timers');
+      clearTimeout(timer);
+    };
+  }, [isLoading]);
 
   // Get product details for a sale item
   const getProductDetails = (item: SaleItem) => {
@@ -123,12 +125,23 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl max-h-[90vh] flex flex-col" style={{ 
+        width: printSettings.paperSize === 'thermal' ? '80mm' : '100%',
+        maxWidth: printSettings.paperSize === 'thermal' ? '80mm' : '4xl'
+      }}>
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold">Invoice #{sale.invoiceNumber}</h2>
           <div className="flex space-x-2">
             <Button 
               variant="primary"
+              icon={Printer}
+              onClick={handlePrint}
+              disabled={isLoading}
+            >
+              Print Invoice
+            </Button>
+            <Button 
+              variant="success"
               icon={Printer}
               onClick={() => {
                 console.log('Direct print button clicked');
@@ -138,7 +151,7 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
               }}
               disabled={isLoading}
             >
-              Print Invoice
+              Direct Print
             </Button>
             <Button variant="secondary" onClick={onClose}>Close</Button>
           </div>
@@ -151,121 +164,124 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
               <span className="ml-2 text-gray-600">Preparing invoice for printing...</span>
             </div>
           ) : (
-            <div ref={invoiceRef} className="p-8 bg-white">
+            <div 
+              ref={invoiceRef} 
+              className="p-8 bg-white"
+              style={{
+                width: printSettings.paperSize === 'thermal' ? '80mm' : 'auto',
+                maxWidth: printSettings.paperSize === 'thermal' ? '80mm' : '4xl',
+                margin: '0 auto',
+                fontSize: printSettings.paperSize === 'thermal' ? '10px' : '12px',
+                lineHeight: printSettings.paperSize === 'thermal' ? '1.2' : '1.5'
+              }}
+            >
               {/* Invoice Header */}
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  {printSettings.showLogo && companyInfo.logo && (
-                    <img
-                      src={companyInfo.logo}
-                      alt="Company Logo"
-                      className="h-16 mb-2"
-                    />
-                  )}
-                  <h1 className="text-2xl font-bold text-gray-800">{companyInfo.name}</h1>
-                  <p className="text-gray-600 whitespace-pre-line">{companyInfo.address}</p>
-                  <p className="text-gray-600">{companyInfo.email}</p>
-                  <p className="text-gray-600">{companyInfo.website}</p>
-                  {printSettings.showTaxId && (
-                    <>
-                      <p className="text-gray-600">NTN: {companyInfo.ntn}</p>
-                      <p className="text-gray-600">STRN: {companyInfo.strn}</p>
-                      <p className="text-gray-600">PH: {companyInfo.phone}</p>
-                      <p className="text-gray-600">Cell: {companyInfo.cell}</p>
-                    </>
-                  )}
-                </div>
+              <div className="text-center mb-4" style={{ fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px' }}>
+                {printSettings.showLogo && companyInfo.logo && (
+                  <img
+                    src={companyInfo.logo}
+                    alt="Company Logo"
+                    className="mb-2 mx-auto"
+                    style={{ height: printSettings.paperSize === 'thermal' ? '40px' : '64px' }}
+                  />
+                )}
+                <h1 className="font-bold" style={{ fontSize: printSettings.paperSize === 'thermal' ? '12px' : '18px', margin: '2px 0' }}>{companyInfo.name}</h1>
+                <p className="whitespace-pre-line" style={{ margin: '2px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>{companyInfo.address}</p>
+                {printSettings.showTaxId && (
+                  <>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>NTN: {companyInfo.ntn}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>STRN: {companyInfo.strn}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>PH: {companyInfo.phone}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>Cell: {companyInfo.cell}</p>
+                  </>
+                )}
+              </div>
 
-                <div className="text-right">
-                  <h2 className="text-xl font-bold text-gray-800 mb-2">INVOICE</h2>
-                  <p className="text-gray-600"><span className="font-medium">Invoice #:</span> {sale.invoiceNumber}</p>
-                  <p className="text-gray-600"><span className="font-medium">Date:</span> {new Date(sale.saleDate).toLocaleDateString()}</p>
-                  <p className="text-gray-600"><span className="font-medium">Time:</span> {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
-                  <p className="text-gray-600"><span className="font-medium">Status:</span> {sale.status.charAt(0).toUpperCase() + sale.status.slice(1)}</p>
-                </div>
+              {/* Invoice Details */}
+              <div className="mb-3 text-center" style={{ fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px' }}>
+                <h2 className="font-bold mb-1" style={{ fontSize: printSettings.paperSize === 'thermal' ? '11px' : '16px', margin: '2px 0' }}>INVOICE</h2>
+                <p style={{ margin: '1px 0' }}><span className="font-medium">Invoice #:</span> {sale.invoiceNumber}</p>
+                <p style={{ margin: '1px 0' }}><span className="font-medium">Date:</span> {new Date(sale.saleDate).toLocaleDateString()}</p>
+                <p style={{ margin: '1px 0' }}><span className="font-medium">Time:</span> {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+                <p style={{ margin: '1px 0' }}><span className="font-medium">Status:</span> {sale.status.charAt(0).toUpperCase() + sale.status.slice(1)}</p>
               </div>
 
               {/* Customer Information */}
-              <div className="mb-8 p-4 bg-gray-50 rounded-md">
-                <h2 className="text-lg font-bold text-gray-800 mb-2">Customer Information</h2>
-                <p className="text-gray-700"><span className="font-medium">Name:</span> {sale.customerName || customer?.name || 'Walk-in Customer'}</p>
+              <div className="mb-3" style={{ borderTop: '1px dashed #000', borderBottom: '1px dashed #000', padding: '2px 0', fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px' }}>
+                <p style={{ margin: '1px 0' }}><span className="font-medium">Customer:</span> {sale.customerName || customer?.name || 'Walk-in Customer'}</p>
                 {customer?.address && (
-                  <p className="text-gray-700"><span className="font-medium">Address:</span> {customer.address}</p>
+                  <p style={{ margin: '1px 0' }}><span className="font-medium">Address:</span> {customer.address}</p>
                 )}
                 {customer?.phone && (
-                  <p className="text-gray-700"><span className="font-medium">Phone:</span> {customer.phone}</p>
-                )}
-                {customer?.email && (
-                  <p className="text-gray-700"><span className="font-medium">Email:</span> {customer.email}</p>
+                  <p style={{ margin: '1px 0' }}><span className="font-medium">Phone:</span> {customer.phone}</p>
                 )}
                 {sale.salesperson && (
-                  <p className="text-gray-700"><span className="font-medium">Salesperson:</span> {sale.salesperson}</p>
+                  <p style={{ margin: '1px 0' }}><span className="font-medium">Salesperson:</span> {sale.salesperson}</p>
                 )}
               </div>
 
               {/* Invoice Items */}
-              <table className="w-full mb-8">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="py-2 px-4 text-left border-b">Item</th>
-                    <th className="py-2 px-4 text-right border-b">Qty</th>
-                    <th className="py-2 px-4 text-right border-b">Unit Price</th>
-                    <th className="py-2 px-4 text-right border-b">Discount</th>
-                    <th className="py-2 px-4 text-right border-b">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sale.items.map((item, index) => {
-                    const product = getProductDetails(item);
-                    return (
-                      <tr key={index} className="border-b">
-                        <td className="py-2 px-4">
-                          <div className="font-medium">{product?.name || 'Unknown Product'}</div>
-                          <div className="text-sm text-gray-600">{product?.code || ''}</div>
-                        </td>
-                        <td className="py-2 px-4 text-right">{item.quantity} {product?.unit || ''}</td>
-                        <td className="py-2 px-4 text-right">₨{item.salePrice.toFixed(2)}</td>
-                        <td className="py-2 px-4 text-right">₨{(item.discount || 0).toFixed(2)}</td>
-                        <td className="py-2 px-4 text-right">₨{item.total.toFixed(2)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div className="mb-3" style={{ fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>
+                <div style={{ borderBottom: '1px dashed #000', marginBottom: '2px', paddingBottom: '2px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ width: '40%', fontWeight: 'bold' }}>Item</span>
+                  <span style={{ width: '15%', textAlign: 'center', fontWeight: 'bold' }}>Qty</span>
+                  <span style={{ width: '20%', textAlign: 'right', fontWeight: 'bold' }}>Price</span>
+                  <span style={{ width: '25%', textAlign: 'right', fontWeight: 'bold' }}>Total</span>
+                </div>
+                {sale.items.map((item, index) => {
+                  const product = getProductDetails(item);
+                  return (
+                    <div key={index} style={{ marginBottom: '2px', paddingBottom: '2px', borderBottom: index === sale.items.length - 1 ? 'none' : '1px dotted #ccc' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ width: '40%' }}>{product?.name || 'Unknown Product'}</span>
+                        <span style={{ width: '15%', textAlign: 'center' }}>{item.quantity} {product?.unit || ''}</span>
+                        <span style={{ width: '20%', textAlign: 'right' }}>₨{item.salePrice.toFixed(2)}</span>
+                        <span style={{ width: '25%', textAlign: 'right' }}>₨{item.total.toFixed(2)}</span>
+                      </div>
+                      {(item.discount > 0) && (
+                        <div style={{ fontSize: printSettings.paperSize === 'thermal' ? '7px' : '10px', textAlign: 'right' }}>
+                          Discount: ₨{(item.discount || 0).toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* Invoice Summary */}
-              <div className="flex justify-end mb-8">
-                <div className="w-64">
-                  <div className="flex justify-between py-2">
-                    <span className="font-medium">Subtotal:</span>
-                    <span>₨{sale.totalAmount.toFixed(2)}</span>
+              <div className="mb-3" style={{ borderTop: '1px dashed #000', paddingTop: '2px', fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}>
+                  <span className="font-medium">Subtotal:</span>
+                  <span>₨{sale.totalAmount.toFixed(2)}</span>
+                </div>
+                {sale.discount > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}>
+                    <span className="font-medium">Discount:</span>
+                    <span>₨{sale.discount.toFixed(2)}</span>
                   </div>
-                  {sale.discount > 0 && (
-                    <div className="flex justify-between py-2">
-                      <span className="font-medium">Discount:</span>
-                      <span>₨{sale.discount.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between py-2 border-t font-bold">
-                    <span>Total:</span>
-                    <span>₨{(sale.netAmount || sale.totalAmount).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between py-2">
-                    <span className="font-medium">Amount Paid:</span>
-                    <span>₨{(sale.amountPaid || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-t border-b font-bold">
-                    <span>Remaining Balance:</span>
-                    <span>₨{(sale.remainingBalance || 0).toFixed(2)}</span>
-                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0', fontWeight: 'bold', borderTop: '1px dotted #000', borderBottom: '1px dotted #000', padding: '2px 0' }}>
+                  <span>Total:</span>
+                  <span>₨{(sale.netAmount || sale.totalAmount).toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}>
+                  <span className="font-medium">Amount Paid:</span>
+                  <span>₨{(sale.amountPaid || 0).toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}>
+                  <span className="font-medium">Remaining Balance:</span>
+                  <span style={{ color: (sale.remainingBalance || 0) > 0 ? '#dc2626' : 'inherit', fontWeight: (sale.remainingBalance || 0) > 0 ? 'bold' : 'normal' }}>₨{(sale.remainingBalance || 0).toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Removed payment information and signatures as requested */}
 
               {/* Footer */}
-              <div className="text-center text-gray-600 text-sm mt-8">
-                <p>{printSettings.footerText}</p>
+              <div className="text-center" style={{ fontSize: printSettings.paperSize === 'thermal' ? '8px' : '10px', marginTop: '10px' }}>
+                {printSettings.footerText && (
+                  <p className="whitespace-pre-line">{printSettings.footerText}</p>
+                )}
+                <p style={{ marginTop: '5px' }}>Thank you for your business!</p>
               </div>
             </div>
           )}

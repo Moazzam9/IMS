@@ -35,7 +35,7 @@ const OldBatterySales: React.FC = () => {
   const [saleItems, setSaleItems] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingSale, setEditingSale] = useState<OldBattery | null>(null);
-  const [isLoadingInvoice, setIsLoadingInvoice] = useState(true);
+  const [isLoadingInvoice, setIsLoadingInvoice] = useState(false);
   const [selectedBatteryForPrint, setSelectedBatteryForPrint] = useState<OldBattery | null>(null);
   
   const [newOldBattery, setNewOldBattery] = useState({
@@ -179,13 +179,21 @@ const OldBatterySales: React.FC = () => {
   
   // Handle print old battery sale invoice
   const handlePrint = (sale: OldBattery) => {
+    // Prevent multiple clicks
+    if (isLoadingInvoice) {
+      console.log('Already loading invoice, ignoring click');
+      return;
+    }
+    
     try {
       console.log('Print button clicked for old battery sale:', sale.id);
-      // First set the selected battery, then set loading to false after a short delay
+      // Set loading state to true initially
+      setIsLoadingInvoice(true);
+      // Set the selected battery for print
       setSelectedBatteryForPrint(sale);
-      // Use a short timeout to ensure the component is mounted before changing loading state
+      
+      // Reset loading state after a short delay to ensure data is loaded
       setTimeout(() => {
-        console.log('Setting isLoadingInvoice to false for old battery');
         setIsLoadingInvoice(false);
       }, 300);
     } catch (error) {
@@ -198,13 +206,10 @@ const OldBatterySales: React.FC = () => {
   // Close print modal
   const handleClosePrintModal = () => {
     console.log('Closing old battery print modal');
-    // Set loading to true for next time
-    setIsLoadingInvoice(true);
-    // Use setTimeout to ensure state updates properly before removing the modal
-    setTimeout(() => {
-      setSelectedBatteryForPrint(null);
-      console.log('Old battery print data cleared');
-    }, 100);
+    // Simply reset the state without complex timeouts
+    setSelectedBatteryForPrint(null);
+    setIsLoadingInvoice(false);
+    console.log('Old battery print data cleared and loading state reset');
   };
 
   // Filter old batteries based on search term and filter
@@ -407,6 +412,7 @@ const OldBatterySales: React.FC = () => {
       {/* Print Modal */}
       {selectedBatteryForPrint && (
         <OldBatteryPrint
+          key={`invoice-${selectedBatteryForPrint.id}-${Date.now()}`}
           oldBattery={selectedBatteryForPrint}
           onClose={handleClosePrintModal}
           isLoading={isLoadingInvoice}
