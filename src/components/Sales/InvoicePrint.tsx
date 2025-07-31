@@ -110,10 +110,11 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
   const getProductDetails = (item: SaleItem) => {
     const product = products.find(p => p.id === item.productId);
     if (product && item.oldBatteryData) {
-      const deductionAmount = item.oldBatteryData.weight * item.oldBatteryData.ratePerKg;
+      const quantity = item.oldBatteryData.quantity || 1;
+      const deductionAmount = item.oldBatteryData.weight * item.oldBatteryData.ratePerKg * quantity;
       return {
         ...product,
-        name: `${product.name} (Old Battery: ${item.oldBatteryData.name}, Weight: ${item.oldBatteryData.weight}kg @ Rs.${item.oldBatteryData.ratePerKg}/kg = Rs.${deductionAmount} deduction)`,
+        name: `${product.name} (Old Battery: ${item.oldBatteryData.name}, Qty: ${quantity}, Weight: ${item.oldBatteryData.weight}kg @ Rs.${item.oldBatteryData.ratePerKg}/kg = Rs.${deductionAmount} deduction)`,
         oldBatteryDeduction: deductionAmount
       };
     }
@@ -124,8 +125,9 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
   const totalOldBatteryDeductions = sale.items
     .filter(item => item.oldBatteryData)
     .reduce((total, item) => {
+      const quantity = item.oldBatteryData?.quantity || 1;
       const deductionAmount = item.oldBatteryData ?
-        item.oldBatteryData.weight * item.oldBatteryData.ratePerKg : 0;
+        item.oldBatteryData.weight * item.oldBatteryData.ratePerKg * quantity : 0;
       return total + deductionAmount;
     }, 0);
 

@@ -229,6 +229,12 @@ const SalesList: React.FC = () => {
             throw new Error(`Invalid old battery data for item ${index + 1}`);
           }
         }
+        
+        // Validate stock availability
+        const product = products.find(p => p.id === item.productId);
+        if (product && item.quantity > product.currentStock) {
+          throw new Error(`Insufficient stock for ${product.name}. Only ${product.currentStock} units available.`);
+        }
       });
 
       const saleData = {
@@ -470,11 +476,17 @@ const SalesList: React.FC = () => {
     const updatedItems = [...saleItems];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
 
-    // If product is selected, automatically set the sale price
+    // If product is selected, automatically set the sale price and validate stock
     if (field === 'productId' && value) {
       const selectedProduct = products.find(p => p.id === value);
       if (selectedProduct) {
         updatedItems[index].salePrice = selectedProduct.salePrice;
+        
+        // Check if the current quantity exceeds available stock
+        if (updatedItems[index].quantity > selectedProduct.currentStock) {
+          // Show warning message for insufficient stock
+          showToast(`Warning: Only ${selectedProduct.currentStock} units of ${selectedProduct.name} available in stock.`, 'warning');
+        }
 
         // Recalculate total after setting the sale price
         const subtotal = updatedItems[index].quantity * selectedProduct.salePrice;
@@ -483,9 +495,19 @@ const SalesList: React.FC = () => {
       }
     }
 
-    // Calculate total for the item
+    // Calculate total for the item and validate stock if quantity is changed
     if (field === 'quantity' || field === 'salePrice' || field === 'discount') {
       const item = updatedItems[index];
+      
+      // Check if quantity exceeds available stock when quantity field is changed
+      if (field === 'quantity' && item.productId) {
+        const selectedProduct = products.find(p => p.id === item.productId);
+        if (selectedProduct && value > selectedProduct.currentStock) {
+          // Show warning message for insufficient stock
+          showToast(`Warning: Only ${selectedProduct.currentStock} units of ${selectedProduct.name} available in stock.`, 'warning');
+        }
+      }
+      
       // Calculate total after discount and old battery deduction
       const subtotal = item.quantity * item.salePrice;
       const oldBatteryDeduction = item.oldBatteryData?.deductionAmount || 0;
@@ -951,9 +973,33 @@ const SalesList: React.FC = () => {
                       placeholder="Qty"
                       value={item.quantity}
                       onChange={(e) => updateSaleItem(index, 'quantity', parseInt(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      className={`w-full px-2 py-1 border rounded text-sm ${(() => {
+                        // Check stock status if product is selected
+                        if (item.productId) {
+                          const product = products.find(p => p.id === item.productId);
+                          if (product) {
+                            if (item.quantity > product.currentStock) {
+                              return 'border-red-500 bg-red-50'; // Out of stock
+                            } else if (item.quantity >= product.currentStock * 0.8) {
+                              return 'border-yellow-500 bg-yellow-50'; // Low stock
+                            }
+                          }
+                        }
+                        return 'border-gray-300'; // Normal
+                      })()}`}
                       required
                     />
+                    {item.productId && (() => {
+                      const product = products.find(p => p.id === item.productId);
+                      if (product && item.quantity > product.currentStock) {
+                        return (
+                          <div className="text-xs text-red-600 mt-1">
+                            Only {product.currentStock} in stock
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                   <div className="col-span-2">
                     <input

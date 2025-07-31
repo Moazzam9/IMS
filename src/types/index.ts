@@ -158,6 +158,7 @@ export interface OldBattery {
   status: 'completed' | 'pending';
   saleId: string;
   saleItemId: string;
+  quantity: number;
   createdAt: string;
 }
 

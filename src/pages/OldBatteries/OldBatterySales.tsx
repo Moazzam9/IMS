@@ -44,7 +44,8 @@ const OldBatterySales: React.FC = () => {
     ratePerKg: 0,
     deductionAmount: 0,
     saleId: 'manual-entry-sale',
-    saleItemId: 'manual-entry-item'
+    saleItemId: 'manual-entry-item',
+    quantity: 1
   });
   
   // Load old battery sales from the new collection and generate next invoice number
@@ -94,16 +95,22 @@ const OldBatterySales: React.FC = () => {
         .filter(num => num && num.startsWith('OB-'))
         .map(num => {
           const numPart = num.split('-')[1];
-          return numPart ? parseInt(numPart, 10) : 0;
+          // Ensure we're parsing a valid number
+          return numPart && /^\d+$/.test(numPart) ? parseInt(numPart, 10) : 0;
         });
+      
+      console.log('Extracted invoice numbers:', invoiceNumbers);
       
       // Find the highest number
       const highestNumber = invoiceNumbers.length > 0 ? Math.max(...invoiceNumbers) : 0;
+      console.log('Highest invoice number:', highestNumber);
       
       // Generate the next number with padding
       const nextNumber = highestNumber + 1;
       const paddedNumber = nextNumber.toString().padStart(3, '0');
       const nextInvoiceNumber = `OB-${paddedNumber}`;
+      
+      console.log('Generated next invoice number:', nextInvoiceNumber);
       
       // Update the form data with the new invoice number
       setFormData(prev => ({
@@ -244,7 +251,14 @@ const OldBatterySales: React.FC = () => {
     setIsSearching(true);
     try {
       const allBatteries = await OldBatteryService.getOldBatteryStock(user.firebaseUid);
-      const filteredResults = allBatteries.filter(battery => {
+      
+      // Ensure all batteries have valid weight values
+      const validatedBatteries = allBatteries.map(battery => ({
+        ...battery,
+        weight: typeof battery.weight === 'number' && !isNaN(battery.weight) ? battery.weight : 0
+      }));
+      
+      const filteredResults = validatedBatteries.filter(battery => {
         if (filter === 'name') {
           return battery.name.toLowerCase().includes(term.toLowerCase());
         } else if (filter === 'weight') {
@@ -263,17 +277,18 @@ const OldBatterySales: React.FC = () => {
     }
   };
 
-  // Calculate deduction amount whenever weight or rate changes
+  // Calculate deduction amount whenever weight, rate, or quantity changes
   useEffect(() => {
     const weight = newOldBattery.weight || 0;
     const ratePerKg = newOldBattery.ratePerKg || 0;
-    const deductionAmount = weight * ratePerKg;
+    const quantity = newOldBattery.quantity || 1;
+    const deductionAmount = weight * ratePerKg * quantity;
 
     setNewOldBattery(prev => ({
       ...prev,
       deductionAmount
     }));
-  }, [newOldBattery.weight, newOldBattery.ratePerKg]);
+  }, [newOldBattery.weight, newOldBattery.ratePerKg, newOldBattery.quantity]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -296,13 +311,20 @@ const OldBatterySales: React.FC = () => {
   };
 
   const handleSelectBattery = (battery: OldBattery) => {
+    // Ensure weight is a valid number
+    const weight = typeof battery.weight === 'number' && !isNaN(battery.weight) ? battery.weight : 0;
+    const ratePerKg = typeof battery.ratePerKg === 'number' && !isNaN(battery.ratePerKg) ? battery.ratePerKg : 0;
+    const quantity = battery.quantity || 1;
+    const deductionAmount = weight * ratePerKg * quantity;
+    
     setNewOldBattery({
       name: battery.name,
-      weight: battery.weight,
-      ratePerKg: battery.ratePerKg,
-      deductionAmount: battery.deductionAmount,
+      weight: weight,
+      ratePerKg: ratePerKg,
+      deductionAmount: deductionAmount,
       saleId: 'manual-entry-sale',
-      saleItemId: 'manual-entry-item'
+      saleItemId: 'manual-entry-item',
+      quantity: quantity
     });
     setSearchResults([]);
     setSearchTerm('');
@@ -323,6 +345,25 @@ const OldBatterySales: React.FC = () => {
     if (!newOldBattery.name || !newOldBattery.weight || !newOldBattery.ratePerKg) {
       showToast('Please fill in all old battery details', 'error');
       return;
+    }
+
+    // Check if there's enough quantity in stock before proceeding
+    try {
+      const batteryStock = await OldBatteryService.getOldBatteryStock(user.firebaseUid);
+      const batteryInStock = batteryStock.find(b => b.name.toLowerCase() === newOldBattery.name.toLowerCase());
+      
+      if (batteryInStock) {
+        const availableQuantity = batteryInStock.quantity || 0;
+        const requestedQuantity = newOldBattery.quantity || 1;
+        
+        if (requestedQuantity > availableQuantity) {
+          showToast(`Not enough quantity in stock. Available: ${availableQuantity}, Requested: ${requestedQuantity}`, 'error');
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking battery stock:', error);
+      // Continue with the sale even if stock check fails
     }
 
     setIsSubmitting(true);
@@ -366,7 +407,8 @@ const OldBatterySales: React.FC = () => {
         ratePerKg: 0,
         deductionAmount: 0,
         saleId: 'manual-entry-sale',
-        saleItemId: 'manual-entry-item'
+        saleItemId: 'manual-entry-item',
+        quantity: 1
       });
       
       setFormData({
@@ -446,41 +488,41 @@ const OldBatterySales: React.FC = () => {
             ]}
           />
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-visible">
+          <table className="w-full table-fixed divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
                   Invoice #
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
                   Customer
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
                   Battery Details
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
                   Total
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
                   Discount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
                   Net Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
                   Amount Paid
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
                   Remaining Balance
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[7%]">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[6%]">
                   Actions
                 </th>
               </tr>
@@ -488,50 +530,50 @@ const OldBatterySales: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredOldBatteries.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={11} className="px-3 py-4 text-center text-gray-500">
                     {oldBatteries.length === 0 ? 'No old battery sales found. Add your first old battery sale.' : 'No matching records found.'}
                   </td>
                 </tr>
               ) : (
                 filteredOldBatteries.map((sale) => (
                   <tr key={sale.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 truncate">
                       <div className="text-sm font-medium text-gray-900">{sale.invoiceNumber}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 truncate">
                       <div className="text-sm text-gray-900">{sale.customerName || 'Walk-in Customer'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 truncate">
                       <div className="text-sm text-gray-500">
                         {new Date(sale.saleDate).toLocaleDateString()}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 truncate">
                       <div className="text-sm text-gray-900">
                         {sale.name} - {sale.weight} kg @ ₨{sale.ratePerKg}/kg
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 truncate">
                       <div className="text-sm font-medium text-blue-600">₨{(sale.deductionAmount || 0).toFixed(2)}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 truncate">
                       <div className="text-sm font-medium text-blue-600">₨{(sale.discount || 0).toFixed(2)}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 truncate">
                       <div className="text-sm font-medium text-blue-600">₨{((sale.deductionAmount || 0) - (sale.discount || 0)).toFixed(2)}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 truncate">
                       <div className="text-sm font-medium text-blue-600">₨{(sale.amountPaid || 0).toFixed(2)}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 truncate">
                       <div className="text-sm font-medium text-blue-600">₨{(((sale.deductionAmount || 0) - (sale.discount || 0)) - (sale.amountPaid || 0)).toFixed(2)}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 truncate">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${sale.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                         {sale.status === 'completed' ? 'Completed' : 'Pending'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3">
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleEdit(sale)}
@@ -734,15 +776,16 @@ const OldBatterySales: React.FC = () => {
               {/* Old Battery Form */}
               <div className="p-4 bg-white border rounded-md">
                 <div className="grid grid-cols-12 gap-2 mb-2 text-sm font-medium text-gray-700">
-                  <div className="col-span-4">Name/Reference *</div>
+                  <div className="col-span-3">Name/Reference *</div>
+                  <div className="col-span-2">Quantity *</div>
                   <div className="col-span-2">Weight (kg) *</div>
                   <div className="col-span-2">Rate per Kg *</div>
                   <div className="col-span-2">Deduction Amount</div>
-                  <div className="col-span-2"></div>
+                  <div className="col-span-1"></div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-2 items-center">
-                <div className="col-span-4">
+                <div className="col-span-3">
                   <div className="mb-2">
                     <SearchBar
                       placeholder="Search old battery stock..."
@@ -782,6 +825,19 @@ const OldBatterySales: React.FC = () => {
                     required
                   />
                 </div>
+                  <div className="col-span-2">
+                    <input
+                      type="number"
+                      name="quantity"
+                      value={newOldBattery.quantity || 1}
+                      onChange={handleInputChange}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      min="1"
+                      step="1"
+                      placeholder="Enter quantity"
+                      required
+                    />
+                  </div>
                   <div className="col-span-2">
                     <input
                       type="number"

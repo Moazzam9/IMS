@@ -6,15 +6,15 @@ import { ref, push, set, update, get, remove } from 'firebase/database';
 export class OldBatteryService {
   private static collectionName = 'oldBatteries';
 
-  static async addOldBattery(oldBatteryData: any, userId: string): Promise<string> {
+  static async addOldBattery(batteryData: any, userId: string): Promise<string> {
     try {
       // Check if this is a standalone old battery sale or part of a regular sale
-      const isStandaloneSale = oldBatteryData.invoiceNumber !== undefined;
+      const isStandaloneSale = batteryData.invoiceNumber !== undefined;
       
       if (isStandaloneSale) {
         // This is a standalone old battery sale with invoice details
-        if (!oldBatteryData.name || !oldBatteryData.weight || !oldBatteryData.ratePerKg || 
-            typeof oldBatteryData.deductionAmount !== 'number' || !oldBatteryData.invoiceNumber) {
+        if (!batteryData.name || !batteryData.weight || !batteryData.ratePerKg || 
+            typeof batteryData.deductionAmount !== 'number' || !batteryData.invoiceNumber) {
           throw new Error('Invalid old battery sale data: missing required fields');
         }
         
@@ -26,21 +26,22 @@ export class OldBatteryService {
         
         const saleData = {
           id: oldBatterySaleId,
-          invoiceNumber: oldBatteryData.invoiceNumber,
-          customerId: oldBatteryData.customerId || '',
-          customerName: oldBatteryData.customerName || '',
-          salesperson: oldBatteryData.salesperson || '',
-          saleDate: oldBatteryData.saleDate || timestamp,
-          status: oldBatteryData.status || 'completed',
-          amountPaid: oldBatteryData.amountPaid || 0,
-          totalAmount: oldBatteryData.deductionAmount,
-          discount: oldBatteryData.discount || 0,
-          remainingBalance: oldBatteryData.remainingBalance || 0,
+          invoiceNumber: batteryData.invoiceNumber,
+          customerId: batteryData.customerId || '',
+          customerName: batteryData.customerName || '',
+          salesperson: batteryData.salesperson || '',
+          saleDate: batteryData.saleDate || timestamp,
+          status: batteryData.status || 'completed',
+          amountPaid: batteryData.amountPaid || 0,
+          totalAmount: batteryData.deductionAmount,
+          discount: batteryData.discount || 0,
+          remainingBalance: batteryData.remainingBalance || 0,
           oldBatteryDetails: {
-            name: oldBatteryData.name,
-            weight: oldBatteryData.weight,
-            ratePerKg: oldBatteryData.ratePerKg,
-            deductionAmount: oldBatteryData.deductionAmount
+            name: batteryData.name,
+            weight: batteryData.weight,
+            ratePerKg: batteryData.ratePerKg,
+            deductionAmount: batteryData.deductionAmount,
+            quantity: batteryData.quantity || 1
           },
           createdAt: timestamp
         };
@@ -49,11 +50,11 @@ export class OldBatteryService {
         return oldBatterySaleId;
       } else {
         // This is an old battery as part of a regular sale
-        if (!oldBatteryData.saleId || !oldBatteryData.saleItemId) {
+        if (!batteryData.saleId || !batteryData.saleItemId) {
           throw new Error('Old battery must be associated with a sale and sale item');
         }
-        if (!oldBatteryData.name || !oldBatteryData.weight || !oldBatteryData.ratePerKg || 
-            typeof oldBatteryData.deductionAmount !== 'number') {
+        if (!batteryData.name || !batteryData.weight || !batteryData.ratePerKg || 
+            typeof batteryData.deductionAmount !== 'number') {
           throw new Error('Invalid old battery data: missing required fields');
         }
 
@@ -64,12 +65,13 @@ export class OldBatteryService {
 
         const oldBatteryData = {
           id: oldBatteryId,
-          saleId: oldBatteryData.saleId,
-          saleItemId: oldBatteryData.saleItemId,
-          name: oldBatteryData.name,
-          weight: oldBatteryData.weight,
-          ratePerKg: oldBatteryData.ratePerKg,
-          deductionAmount: oldBatteryData.deductionAmount,
+          saleId: batteryData.saleId,
+          saleItemId: batteryData.saleItemId,
+          name: batteryData.name,
+          weight: batteryData.weight,
+          ratePerKg: batteryData.ratePerKg,
+          deductionAmount: batteryData.deductionAmount,
+          quantity: batteryData.quantity || 1,
           createdAt: timestamp
         };
 
@@ -99,30 +101,109 @@ export class OldBatteryService {
   
   static async getOldBatteryStock(userId: string): Promise<OldBattery[]> {
     try {
-      // Get all old batteries
+      // Get all old batteries and sales
       const oldBatteries = await this.getOldBatteries(userId);
+      const oldBatterySales = await this.getOldBatterySales(userId);
       
       // Group batteries by name and aggregate their data
       const stockMap = new Map<string, OldBattery>();
       
+      // First add all batteries to the stock
       oldBatteries.forEach(battery => {
         const key = battery.name.toLowerCase();
+        const quantity = battery.quantity || 1;
+        const weight = battery.weight || 0;
+        // Calculate unit weight for this battery
+        const unitWeight = quantity > 0 ? weight / quantity : 0;
         
         if (stockMap.has(key)) {
           // Update existing entry
           const existing = stockMap.get(key)!;
+          const newQuantity = (existing.quantity || 1) + quantity;
+          const newWeight = existing.weight + weight;
+          
           stockMap.set(key, {
             ...existing,
-            weight: existing.weight + battery.weight,
+            weight: newWeight,
             // Average the rate per kg
             ratePerKg: (existing.ratePerKg + battery.ratePerKg) / 2,
-            deductionAmount: existing.deductionAmount + battery.deductionAmount
+            deductionAmount: existing.deductionAmount + battery.deductionAmount,
+            quantity: newQuantity,
+            // Preserve the original unit weight if it exists, otherwise calculate it
+            originalUnitWeight: existing.originalUnitWeight || (newQuantity > 0 ? newWeight / newQuantity : 0)
           });
         } else {
-          // Add new entry
-          stockMap.set(key, { ...battery });
+          // Add new entry with original unit weight
+          stockMap.set(key, { 
+            ...battery,
+            originalUnitWeight: unitWeight
+          });
         }
       });
+      
+      // Get all old batteries from sales collection (these are the ones that have been sold)
+      const soldBatteries = [];
+      
+      // Process all sales to extract sold batteries
+      oldBatterySales.forEach(sale => {
+        if (sale.oldBatteryDetails) {
+          soldBatteries.push({
+            name: sale.oldBatteryDetails.name,
+            weight: sale.oldBatteryDetails.weight || 0,
+            quantity: sale.oldBatteryDetails.quantity || 1
+          });
+        }
+      });
+      
+      console.log('Sold batteries:', soldBatteries);
+      
+      // Group sold batteries by name
+      const soldBatteriesMap = new Map();
+      soldBatteries.forEach(battery => {
+        const key = battery.name.toLowerCase();
+        
+        if (soldBatteriesMap.has(key)) {
+          const existing = soldBatteriesMap.get(key);
+          soldBatteriesMap.set(key, {
+            name: battery.name,
+            weight: existing.weight + battery.weight,
+            quantity: existing.quantity + battery.quantity
+          });
+        } else {
+          soldBatteriesMap.set(key, {
+            name: battery.name,
+            weight: battery.weight,
+            quantity: battery.quantity
+          });
+        }
+      });
+      
+      console.log('Grouped sold batteries:', Array.from(soldBatteriesMap.values()));
+      
+      // Deduct sold batteries from stock
+      soldBatteriesMap.forEach((soldBattery, key) => {
+        if (stockMap.has(key)) {
+          const existing = stockMap.get(key)!;
+          const newQuantity = Math.max(0, (existing.quantity || 1) - soldBattery.quantity);
+          const newWeight = Math.max(0, existing.weight - soldBattery.weight);
+          
+          console.log(`Deducting ${soldBattery.quantity} of ${key} from stock. Before: ${existing.quantity}, After: ${newQuantity}`);
+          
+          // Calculate unit weight before deduction to preserve it
+          const originalUnitWeight = existing.quantity > 0 ? existing.weight / existing.quantity : 0;
+          
+          stockMap.set(key, {
+            ...existing,
+            weight: newWeight,
+            quantity: newQuantity,
+            // Store the original unit weight as a property to preserve it
+            originalUnitWeight: originalUnitWeight > 0 ? originalUnitWeight : existing.originalUnitWeight
+          });
+        }
+      });
+      
+      console.log('Final stock after deductions:', Array.from(stockMap.entries()).map(([key, value]) => ({ name: key, quantity: value.quantity })));
+      
       
       // Convert map to array
       return Array.from(stockMap.values());

@@ -7,6 +7,7 @@ interface OldBatteryFormProps {
     weight: number | null;
     ratePerKg: number | null;
     deductionAmount: number;
+    quantity?: number;
   } | null) => void;
   enabled: boolean;
   initialData?: {
@@ -14,6 +15,7 @@ interface OldBatteryFormProps {
     weight: number | null;
     ratePerKg: number | null;
     deductionAmount: number;
+    quantity?: number;
   };
 }
 
@@ -29,20 +31,24 @@ const OldBatteryForm: React.FC<OldBatteryFormProps> = ({
       weight: null,
       ratePerKg: null,
       deductionAmount: 0,
+      quantity: 1,
     }
   );
 
-  // Calculate deduction amount whenever weight or rate changes
+  // Calculate deduction amount whenever weight, rate, or quantity changes
   useEffect(() => {
-    const weight = oldBatteryData.weight || 0;
+    // Ensure weight is a valid number
+    const weight = typeof oldBatteryData.weight === 'number' && !isNaN(oldBatteryData.weight) ? oldBatteryData.weight : 0;
     const ratePerKg = oldBatteryData.ratePerKg || 0;
-    const deductionAmount = weight * ratePerKg;
+    const quantity = oldBatteryData.quantity || 1;
+    const deductionAmount = weight * ratePerKg * quantity;
 
     setOldBatteryData((prev) => ({
       ...prev,
+      weight: weight, // Ensure weight is always a valid number
       deductionAmount,
     }));
-  }, [oldBatteryData.weight, oldBatteryData.ratePerKg]);
+  }, [oldBatteryData.weight, oldBatteryData.ratePerKg, oldBatteryData.quantity]);
 
   // Notify parent component when includeOldBattery changes
   useEffect(() => {
@@ -55,6 +61,7 @@ const OldBatteryForm: React.FC<OldBatteryFormProps> = ({
         weight: null,
         ratePerKg: null,
         deductionAmount: 0,
+        quantity: 1,
       });
     }
   }, [includeOldBattery, onOldBatteryChange]);
@@ -158,6 +165,31 @@ const OldBatteryForm: React.FC<OldBatteryFormProps> = ({
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter rate per kg"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Quantity
+            </label>
+            <input
+              type="number"
+              value={oldBatteryData.quantity || 1}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9]/g, '');
+                const numericValue = value === '' ? 1 : parseInt(value);
+                if (!isNaN(numericValue) && numericValue > 0) {
+                  const newData = { ...oldBatteryData, quantity: numericValue };
+                  setOldBatteryData(newData);
+                  if (includeOldBattery) {
+                    onOldBatteryChange(newData);
+                  }
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              min="1"
+              step="1"
+              placeholder="Enter quantity"
             />
           </div>
 
