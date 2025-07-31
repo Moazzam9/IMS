@@ -89,13 +89,21 @@ const OldBatteriesList: React.FC = () => {
   const groupedBatteries = useMemo(() => {
     // Map the stock data to the format expected by the component
     return stockData.map(battery => {
+      // For manually added batteries, the weight entered is already the unit weight
+      // Use originalUnitWeight if available, otherwise use the weight directly as unit weight
+      const unitWeight = battery.originalUnitWeight || 
+                         (battery.quantity > 0 ? battery.weight : 0);
+      
+      // Calculate total weight based on quantity and unit weight
+      const totalWeight = battery.quantity * unitWeight;
+      
       return {
         name: battery.name,
-        totalWeight: battery.weight || 0,
+        totalWeight: totalWeight || 0,
         count: battery.quantity || 0,
         // Use the originalUnitWeight property from the service if available
         // This ensures unit weight remains constant even when quantity is zero
-        unitWeight: battery.originalUnitWeight || (battery.quantity > 0 ? battery.weight / battery.quantity : 0)
+        unitWeight: unitWeight
       };
     });
   }, [stockData]);
@@ -246,12 +254,8 @@ const OldBatteriesList: React.FC = () => {
       return;
     }
 
-    // Check if there's enough quantity in stock
-    const batteryInfo = groupedBatteries.find(b => b.name.toLowerCase() === newOldBattery.name.toLowerCase());
-    if (batteryInfo && newOldBattery.quantity > batteryInfo.count) {
-      showToast(`Not enough batteries in stock. Available: ${batteryInfo.count}`, 'error');
-      return;
-    }
+    // When adding new old batteries, we don't need to check stock levels
+    // as we're adding to the inventory, not reducing it
 
     try {
       await OldBatteryService.addOldBattery(newOldBattery, user.firebaseUid);

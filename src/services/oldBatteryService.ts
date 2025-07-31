@@ -113,8 +113,9 @@ export class OldBatteryService {
         const key = battery.name.toLowerCase();
         const quantity = battery.quantity || 1;
         const weight = battery.weight || 0;
-        // Calculate unit weight for this battery
-        const unitWeight = quantity > 0 ? weight / quantity : 0;
+        // For manually added batteries, the weight is already the unit weight
+        // No need to divide by quantity
+        const unitWeight = weight;
         
         if (stockMap.has(key)) {
           // Update existing entry
@@ -129,8 +130,8 @@ export class OldBatteryService {
             ratePerKg: (existing.ratePerKg + battery.ratePerKg) / 2,
             deductionAmount: existing.deductionAmount + battery.deductionAmount,
             quantity: newQuantity,
-            // Preserve the original unit weight if it exists, otherwise calculate it
-            originalUnitWeight: existing.originalUnitWeight || (newQuantity > 0 ? newWeight / newQuantity : 0)
+            // Preserve the original unit weight if it exists, otherwise use the weight directly
+            originalUnitWeight: existing.originalUnitWeight || unitWeight
           });
         } else {
           // Add new entry with original unit weight
@@ -189,15 +190,14 @@ export class OldBatteryService {
           
           console.log(`Deducting ${soldBattery.quantity} of ${key} from stock. Before: ${existing.quantity}, After: ${newQuantity}`);
           
-          // Calculate unit weight before deduction to preserve it
-          const originalUnitWeight = existing.quantity > 0 ? existing.weight / existing.quantity : 0;
+          // Preserve the existing originalUnitWeight instead of recalculating
           
           stockMap.set(key, {
             ...existing,
             weight: newWeight,
             quantity: newQuantity,
-            // Store the original unit weight as a property to preserve it
-            originalUnitWeight: originalUnitWeight > 0 ? originalUnitWeight : existing.originalUnitWeight
+            // Keep the original unit weight as is
+            originalUnitWeight: existing.originalUnitWeight
           });
         }
       });
