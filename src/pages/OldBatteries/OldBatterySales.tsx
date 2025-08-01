@@ -309,6 +309,16 @@ const OldBatterySales: React.FC = () => {
       setNewOldBattery(prev => ({ ...prev, [name]: numericValue }));
     }
   };
+  
+  // Update amountPaid when deductionAmount changes
+  useEffect(() => {
+    if (newOldBattery.deductionAmount > 0) {
+      setFormData(prev => ({
+        ...prev,
+        amountPaid: newOldBattery.deductionAmount
+      }));
+    }
+  }, [newOldBattery.deductionAmount]);
 
   const handleSelectBattery = (battery: OldBattery) => {
     // Ensure weight is a valid number

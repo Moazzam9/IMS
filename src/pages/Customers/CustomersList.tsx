@@ -6,15 +6,20 @@ import Button from '../../components/Common/Button';
 import Table from '../../components/Common/Table';
 import Modal from '../../components/Common/Modal';
 import SearchBar from '../../components/Common/SearchBar';
-import { Plus, Edit, Trash2, User } from 'lucide-react';
-import { Customer } from '../../types';
+import { Plus, Edit, Trash2, User, DollarSign } from 'lucide-react';
+import { Customer, Sale } from '../../types';
 
 const CustomersList: React.FC = () => {
-  const { customers, sales, loading, addCustomer, updateCustomer, deleteCustomer } = useApp();
+  const { customers, sales, loading, addCustomer, updateCustomer, deleteCustomer, updateSale } = useApp();
   const { showToast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [paymentCustomer, setPaymentCustomer] = useState<Customer | null>(null);
+  const [customerSales, setCustomerSales] = useState<Sale[]>([]);
+  const [totalRemainingBalance, setTotalRemainingBalance] = useState(0);
+  const [paymentAmount, setPaymentAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFilter, setSearchFilter] = useState('name');
@@ -93,6 +98,61 @@ const CustomersList: React.FC = () => {
     }
   };
 
+  const handlePayment = (customer: Customer, sales: Sale[], balance: number) => {
+    setPaymentCustomer(customer);
+    setCustomerSales(sales);
+    setTotalRemainingBalance(balance);
+    setPaymentAmount('');
+    setIsPaymentModalOpen(true);
+  };
+
+  const processPayment = async () => {
+    if (!paymentCustomer || !paymentAmount || customerSales.length === 0) return;
+    
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0 || amount > totalRemainingBalance) {
+      showToast('Please enter a valid payment amount', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      let remainingPayment = amount;
+      
+      // Sort sales by date (oldest first) to pay off oldest debts first
+      const sortedSales = [...customerSales].sort((a, b) => 
+        new Date(a.saleDate).getTime() - new Date(b.saleDate).getTime()
+      );
+
+      // Update each sale's remaining balance until the payment is fully allocated
+      for (const sale of sortedSales) {
+        if (remainingPayment <= 0) break;
+        
+        if (sale.remainingBalance && sale.remainingBalance > 0) {
+          const paymentForThisSale = Math.min(remainingPayment, sale.remainingBalance);
+          
+          const updatedRemainingBalance = sale.remainingBalance - paymentForThisSale;
+          const updatedAmountPaid = sale.amountPaid + paymentForThisSale;
+          
+          await updateSale(sale.id, {
+            remainingBalance: updatedRemainingBalance,
+            amountPaid: updatedAmountPaid
+          });
+          
+          remainingPayment -= paymentForThisSale;
+        }
+      }
+
+      showToast(`Payment of Rs${amount.toFixed(2)} processed successfully`, 'success');
+      setIsPaymentModalOpen(false);
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      showToast('Error processing payment. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const columns = [
     { key: 'code', label: 'Code' },
     { key: 'name', label: 'Name' },
@@ -112,9 +172,19 @@ const CustomersList: React.FC = () => {
         const totalRemainingBalance = customerSales.reduce((total, sale) => total + (sale.remainingBalance || 0), 0);
         
         return (
-          <span className={`font-medium ${totalRemainingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-            {totalRemainingBalance > 0 ? `Rs${totalRemainingBalance.toFixed(2)}` : 'Rs0.00'}
-          </span>
+          <div className="flex items-center space-x-2">
+            <span className={`font-medium ${totalRemainingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              {totalRemainingBalance > 0 ? `Rs${totalRemainingBalance.toFixed(2)}` : 'Rs0.00'}
+            </span>
+            {totalRemainingBalance > 0 && (
+              <button 
+                onClick={() => handlePayment(customer, customerSales, totalRemainingBalance)}
+                className="text-blue-600 hover:text-blue-800 text-xs underline"
+              >
+                Pay
+              </button>
+            )}
+          </div>
         );
       }
     },
@@ -277,6 +347,63 @@ const CustomersList: React.FC = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Payment Modal */}
+      <Modal
+        isOpen={isPaymentModalOpen}
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          setPaymentCustomer(null);
+          setPaymentAmount('');
+        }}
+        title="Process Payment"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-gray-600 mb-1">Customer</p>
+            <p className="font-medium">{paymentCustomer?.name}</p>
+          </div>
+          
+          <div>
+            <p className="text-sm text-gray-600 mb-1">Total Remaining Balance</p>
+            <p className="font-medium text-red-600">Rs{totalRemainingBalance.toFixed(2)}</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Enter Amount Paid by Customer
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              max={totalRemainingBalance}
+              required
+              value={paymentAmount}
+              onChange={(e) => setPaymentAmount(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => setIsPaymentModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              icon={DollarSign} 
+              onClick={processPayment}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Processing...' : 'Enter'}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

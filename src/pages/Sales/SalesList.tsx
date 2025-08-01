@@ -113,7 +113,7 @@ const SalesList: React.FC = () => {
     salesperson: '',
     saleDate: new Date().toISOString().slice(0, 16), // Include date and time (YYYY-MM-DDTHH:MM)
     discount: 0,
-    amountPaid: 0,
+    amountPaid: 0, // Will be set to net amount when items are added
     status: 'completed' as 'completed' | 'returned'
   });
 
@@ -138,20 +138,27 @@ const SalesList: React.FC = () => {
     return items.reduce((sum, item) => sum + (item.discount || 0), 0);
   };
 
-  // Update item totals when they change
+  // Update item totals when they change and set default amount paid to net total
   useEffect(() => {
     if (saleItems.length > 0) {
       // Recalculate totals for all items
       const updatedItems = saleItems.map(item => {
         const subtotal = item.quantity * item.salePrice;
+        const oldBatteryDeduction = item.oldBatteryData?.deductionAmount || 0;
         return {
           ...item,
-          total: subtotal - (item.discount || 0)
+          total: subtotal - (item.discount || 0) - oldBatteryDeduction
         };
       });
-      setSaleItems(updatedItems);
+      
+      // Calculate net total and set as default amount paid
+      const netTotal = updatedItems.reduce((sum, item) => sum + item.total, 0);
+      setFormData(prev => ({
+        ...prev,
+        amountPaid: netTotal
+      }));
     }
-  }, [saleItems.length]);
+  }, [saleItems]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -469,6 +476,14 @@ const SalesList: React.FC = () => {
       updatedItems[index].total = subtotal - (updatedItems[index].discount || 0);
     }
 
+    // Calculate net total and set as default amount paid
+    const netTotal = updatedItems.reduce((sum, item) => sum + item.total, 0);
+    
+    setFormData(prev => ({
+      ...prev,
+      amountPaid: netTotal
+    }));
+
     setSaleItems(updatedItems);
   }, [saleItems]);
 
@@ -515,7 +530,15 @@ const SalesList: React.FC = () => {
 
       // Update the overall discount to be the sum of individual discounts
       const totalDiscount = updatedItems.reduce((sum, item) => sum + (item.discount || 0), 0);
-      setFormData(prev => ({ ...prev, discount: totalDiscount }));
+      
+      // Calculate net total and set as default amount paid
+      const netTotal = updatedItems.reduce((sum, item) => sum + item.total, 0);
+      
+      setFormData(prev => ({ 
+        ...prev, 
+        discount: totalDiscount,
+        amountPaid: netTotal
+      }));
     }
 
     setSaleItems(updatedItems);
@@ -527,7 +550,15 @@ const SalesList: React.FC = () => {
 
     // Update the overall discount to be the sum of individual discounts
     const totalDiscount = updatedItems.reduce((sum, item) => sum + (item.discount || 0), 0);
-    setFormData(prev => ({ ...prev, discount: totalDiscount }));
+    
+    // Calculate net total and set as default amount paid
+    const netTotal = updatedItems.reduce((sum, item) => sum + item.total, 0);
+    
+    setFormData(prev => ({ 
+      ...prev, 
+      discount: totalDiscount,
+      amountPaid: netTotal
+    }));
   };
 
   const columns = [

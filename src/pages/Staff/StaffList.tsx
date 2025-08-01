@@ -35,10 +35,13 @@ const StaffList: React.FC = () => {
   
   const [formData, setFormData] = useState({
     fullName: '',
+    fatherName: '',
     cnic: '',
     phone: '',
     category: '',
     salary: '',
+    salaryPaid: '',
+    remainingSalary: '0',
     joiningDate: new Date().toISOString().split('T')[0],
     address: '',
     status: 'active' as 'active' | 'resigned'
@@ -49,12 +52,19 @@ const StaffList: React.FC = () => {
     setIsSubmitting(true);
     
     try {
+      const salary = parseFloat(formData.salary) || 0;
+      const salaryPaid = parseFloat(formData.salaryPaid) || 0;
+      const remainingSalary = salary - salaryPaid;
+      
       const staffData = {
         fullName: formData.fullName,
+        fatherName: formData.fatherName,
         cnic: formData.cnic,
         phone: formData.phone,
         category: formData.category,
-        salary: parseFloat(formData.salary),
+        salary: salary,
+        salaryPaid: salaryPaid,
+        remainingSalary: remainingSalary,
         joiningDate: formData.joiningDate,
         address: formData.address,
         status: formData.status
@@ -72,10 +82,13 @@ const StaffList: React.FC = () => {
       setEditingStaff(null);
       setFormData({
         fullName: '',
+        fatherName: '',
         cnic: '',
         phone: '',
         category: '',
         salary: '',
+        salaryPaid: '',
+        remainingSalary: '0',
         joiningDate: new Date().toISOString().split('T')[0],
         address: '',
         status: 'active'
@@ -92,10 +105,13 @@ const StaffList: React.FC = () => {
     setEditingStaff(staffMember);
     setFormData({
       fullName: staffMember.fullName,
+      fatherName: staffMember.fatherName || '',
       cnic: staffMember.cnic,
       phone: staffMember.phone,
       category: staffMember.category,
       salary: staffMember.salary.toString(),
+      salaryPaid: staffMember.salaryPaid?.toString() || '0',
+      remainingSalary: staffMember.remainingSalary?.toString() || '0',
       joiningDate: staffMember.joiningDate,
       address: staffMember.address,
       status: staffMember.status
@@ -117,11 +133,23 @@ const StaffList: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const updatedForm = { ...prev, [name]: value };
+      
+      // Calculate remaining salary when salary or salaryPaid changes
+      if (name === 'salary' || name === 'salaryPaid') {
+        const salary = parseFloat(name === 'salary' ? value : prev.salary) || 0;
+        const salaryPaid = parseFloat(name === 'salaryPaid' ? value : prev.salaryPaid) || 0;
+        updatedForm.remainingSalary = (salary - salaryPaid).toString();
+      }
+      
+      return updatedForm;
+    });
   };
 
   const columns = [
     { key: 'fullName', label: 'Full Name' },
+    { key: 'fatherName', label: 'Father\'s Name' },
     { key: 'cnic', label: 'CNIC' },
     { key: 'phone', label: 'Phone Number' },
     { key: 'category', label: 'Category' },
@@ -129,6 +157,16 @@ const StaffList: React.FC = () => {
       key: 'salary', 
       label: 'Salary',
       render: (value: number) => `₨${value.toFixed(2)}`
+    },
+    { 
+      key: 'salaryPaid', 
+      label: 'Salary Paid',
+      render: (value: number) => value ? `₨${value.toFixed(2)}` : '₨0.00'
+    },
+    { 
+      key: 'remainingSalary', 
+      label: 'Remaining Salary',
+      render: (value: number) => value ? `₨${value.toFixed(2)}` : '₨0.00'
     },
     { 
       key: 'joiningDate', 
@@ -214,10 +252,13 @@ const StaffList: React.FC = () => {
           setEditingStaff(null);
           setFormData({
             fullName: '',
+            fatherName: '',
             cnic: '',
             phone: '',
             category: '',
             salary: '',
+            salaryPaid: '',
+            remainingSalary: '0',
             joiningDate: new Date().toISOString().split('T')[0],
             address: '',
             status: 'active'
@@ -241,6 +282,21 @@ const StaffList: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Father's Name
+              </label>
+              <input
+                type="text"
+                name="fatherName"
+                value={formData.fatherName}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 CNIC <span className="text-red-500">*</span>
@@ -335,6 +391,35 @@ const StaffList: React.FC = () => {
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Salary Paid (₨)
+              </label>
+              <input
+                type="number"
+                name="salaryPaid"
+                value={formData.salaryPaid}
+                onChange={handleInputChange}
+                min="0"
+                step="0.01"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Remaining Salary (₨)
+              </label>
+              <input
+                type="number"
+                name="remainingSalary"
+                value={formData.remainingSalary}
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:outline-none"
+              />
+            </div>
           </div>
 
           <div>

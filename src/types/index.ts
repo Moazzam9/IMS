@@ -165,10 +165,13 @@ export interface OldBattery {
 export interface Staff {
   id: string;
   fullName: string;
+  fatherName?: string;
   cnic: string;
   phone: string;
   category: string;
   salary: number;
+  salaryPaid?: number;
+  remainingSalary?: number;
   joiningDate: string;
   address: string;
   status: 'active' | 'resigned';
