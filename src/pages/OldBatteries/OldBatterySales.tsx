@@ -65,6 +65,7 @@ const OldBatterySales: React.FC = () => {
           weight: sale.oldBatteryDetails?.weight,
           ratePerKg: sale.oldBatteryDetails?.ratePerKg,
           deductionAmount: sale.oldBatteryDetails?.deductionAmount || sale.totalAmount,
+          quantity: sale.oldBatteryDetails?.quantity || 1,
           discount: sale.discount || 0,
           amountPaid: sale.amountPaid || 0,
           status: sale.status || 'completed'
@@ -148,7 +149,8 @@ const OldBatterySales: React.FC = () => {
       ratePerKg: sale.ratePerKg || 0,
       deductionAmount: sale.deductionAmount || 0,
       saleId: sale.saleId || 'manual-entry-sale',
-      saleItemId: sale.saleItemId || 'manual-entry-item'
+      saleItemId: sale.saleItemId || 'manual-entry-item',
+      quantity: sale.quantity || 1
     });
     
     setIsModalOpen(true);
@@ -172,6 +174,7 @@ const OldBatterySales: React.FC = () => {
           weight: sale.oldBatteryDetails?.weight,
           ratePerKg: sale.oldBatteryDetails?.ratePerKg,
           deductionAmount: sale.oldBatteryDetails?.deductionAmount || sale.totalAmount,
+          quantity: sale.oldBatteryDetails?.quantity || 1,
           discount: sale.discount || 0,
           amountPaid: sale.amountPaid || 0,
           status: sale.status || 'completed'
@@ -391,7 +394,8 @@ const OldBatterySales: React.FC = () => {
         amountPaid: formData.amountPaid,
         totalAmount: newOldBattery.deductionAmount,
         discount: formData.discount,
-        remainingBalance: newOldBattery.deductionAmount - formData.amountPaid
+        remainingBalance: newOldBattery.deductionAmount - formData.amountPaid,
+        quantity: newOldBattery.quantity || 1
       };
 
       if (editingSale) {
@@ -446,11 +450,15 @@ const OldBatterySales: React.FC = () => {
         weight: sale.oldBatteryDetails?.weight,
         ratePerKg: sale.oldBatteryDetails?.ratePerKg,
         deductionAmount: sale.oldBatteryDetails?.deductionAmount || sale.totalAmount,
+        quantity: sale.oldBatteryDetails?.quantity || 1,
         discount: sale.discount || 0,
         amountPaid: sale.amountPaid || 0,
         status: sale.status || 'completed'
       }));
       setOldBatteries(mappedData);
+      
+      // Generate next invoice number for the next sale
+      generateNextInvoiceNumber(data);
     } catch (error) {
       console.error(`Error ${editingSale ? 'updating' : 'adding'} old battery sale:`, error);
       showToast(`Error ${editingSale ? 'updating' : 'adding'} old battery sale`, 'error');
@@ -479,7 +487,25 @@ const OldBatterySales: React.FC = () => {
           </h1>
           <p className="text-gray-600">View records of old batteries currently being sold (not previously purchased) with sale information</p>
         </div>
-        <Button icon={Plus} onClick={() => setIsModalOpen(true)}>
+        <Button icon={Plus} onClick={async () => {
+          // Only generate a new invoice number when adding a new sale (not editing)
+          if (!editingSale) {
+            try {
+              // Get latest sales data to generate the next invoice number
+              const data = await OldBatteryService.getOldBatterySales(user?.firebaseUid || '');
+              generateNextInvoiceNumber(data);
+            } catch (error) {
+              console.error('Error generating invoice number:', error);
+              // Use fallback if there's an error
+              const timestamp = new Date().getTime().toString().slice(-6);
+              setFormData(prev => ({
+                ...prev,
+                invoiceNumber: `OB-${timestamp}`
+              }));
+            }
+          }
+          setIsModalOpen(true);
+        }}>
           Add Old Battery Sale
         </Button>
       </div>
@@ -620,6 +646,7 @@ const OldBatterySales: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
+          setEditingSale(null);
           setFormData({
             invoiceNumber: '',
             customerId: '',
@@ -629,6 +656,15 @@ const OldBatterySales: React.FC = () => {
             discount: 0,
             amountPaid: 0,
             status: 'completed'
+          });
+          setNewOldBattery({
+            name: '',
+            weight: 0,
+            ratePerKg: 0,
+            deductionAmount: 0,
+            saleId: 'manual-entry-sale',
+            saleItemId: 'manual-entry-item',
+            quantity: 1
           });
           setSaleItems([]);
         }}

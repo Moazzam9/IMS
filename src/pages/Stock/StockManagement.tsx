@@ -3,17 +3,24 @@ import { useApp } from '../../contexts/AppContext';
 import Card from '../../components/Common/Card';
 import Table from '../../components/Common/Table';
 import { StockMovement, Product } from '../../types';
-import { Calendar, Package2 } from 'lucide-react';
+import { Calendar, Package2, Filter } from 'lucide-react';
 
 const StockManagement: React.FC = () => {
   const { stockMovements, products, suppliers, loading } = useApp();
   const [selectedProduct, setSelectedProduct] = useState<string>('');
+  const [selectedMovementType, setSelectedMovementType] = useState<string>('');
   
-  // Filter stock movements by selected product
+  // Filter stock movements by selected product and movement type
   // Data is already sorted by newest first in AppContext
-  const filteredMovements = selectedProduct
-    ? stockMovements.filter(movement => movement.productId === selectedProduct)
-    : stockMovements;
+  const filteredMovements = stockMovements.filter(movement => {
+    // Apply product filter if selected
+    const matchesProduct = selectedProduct ? movement.productId === selectedProduct : true;
+    
+    // Apply movement type filter if selected
+    const matchesType = selectedMovementType ? movement.type === selectedMovementType : true;
+    
+    return matchesProduct && matchesType;
+  });
 
   const columns = [
     { 
@@ -120,21 +127,41 @@ const StockManagement: React.FC = () => {
         <div className="p-4 border-b">
           <h2 className="text-lg font-medium">Stock Movement History</h2>
           <div className="mt-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Filter by Product
-            </label>
-            <select
-              value={selectedProduct}
-              onChange={(e) => setSelectedProduct(e.target.value)}
-              className="w-full md:w-1/3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Products</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name} - Current Stock: {product.currentStock}
-                </option>
-              ))}
-            </select>
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Filter by Product
+                </label>
+                <select
+                  value={selectedProduct}
+                  onChange={(e) => setSelectedProduct(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Products</option>
+                  {products.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name} - Current Stock: {product.currentStock}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Filter by Movement Type
+                </label>
+                <select
+                  value={selectedMovementType}
+                  onChange={(e) => setSelectedMovementType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Movement Types</option>
+                  <option value="purchase">Purchase</option>
+                  <option value="sale">Sale</option>
+                  <option value="return_sale">Sale Return</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
         {loading ? (

@@ -118,6 +118,7 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
                   <thead>
                     <tr style={{ borderBottom: '1px dashed #000' }}>
                       <th style={{ textAlign: 'left', padding: '2px 1px', fontWeight: 'bold' }}>Description</th>
+                      <th style={{ textAlign: 'center', padding: '2px 1px', fontWeight: 'bold' }}>Qty</th>
                       <th style={{ textAlign: 'center', padding: '2px 1px', fontWeight: 'bold' }}>Weight</th>
                       <th style={{ textAlign: 'center', padding: '2px 1px', fontWeight: 'bold' }}>Rate</th>
                       <th style={{ textAlign: 'center', padding: '2px 1px', fontWeight: 'bold' }}>Amount</th>
@@ -126,6 +127,7 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
                   <tbody>
                     <tr style={{ borderBottom: '1px dashed #000' }}>
                       <td style={{ textAlign: 'left', padding: '2px 1px' }}>{oldBattery.name}</td>
+                      <td style={{ textAlign: 'center', padding: '2px 1px' }}>{oldBattery.quantity || 1}</td>
                       <td style={{ textAlign: 'center', padding: '2px 1px' }}>{oldBattery.weight}</td>
                       <td style={{ textAlign: 'center', padding: '2px 1px' }}>₨{oldBattery.ratePerKg}</td>
                       <td style={{ textAlign: 'center', padding: '2px 1px' }}>₨{oldBattery.deductionAmount.toFixed(2)}</td>
