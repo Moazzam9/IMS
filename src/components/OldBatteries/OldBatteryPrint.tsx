@@ -1,5 +1,4 @@
-import React, { useRef, useCallback } from 'react';
-import { useReactToPrint } from 'react-to-print';
+import React, { useRef } from 'react';
 import { OldBattery } from '../../types';
 import Button from '../Common/Button';
 import { Printer } from 'lucide-react';
@@ -30,79 +29,9 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
   const companyInfo = getCompanyInfo();
   const printSettings = getPrintSettings();
 
-  // Use useReactToPrint hook for browser printing
-  const reactToPrint = useReactToPrint({
-    content: () => invoiceRef.current,
-    documentTitle: `Invoice-${oldBattery.invoiceNumber}`,
-    onBeforeGetContent: () => {
-      console.log('Before getting content for printing');
-      return Promise.resolve();
-    },
-    onAfterPrint: () => {
-      console.log('Printed successfully');
-      // Close the modal after printing is complete
-      setTimeout(() => {
-        onClose();
-      }, 100);
-    },
-    onPrintError: (error) => {
-      console.error('Print error:', error);
-      // Close the modal if there's an error
-      onClose();
-    },
-    removeAfterPrint: true
-  });
-
-  // Handle print function
-  const handlePrint = useCallback(() => {
-    console.log('Print function called');
-
-    try {
-      // Always use browser printing to ensure it works
-      console.log('Using browser printing');
-      if (reactToPrint) {
-        // Execute immediately without delay
-        console.log('Executing reactToPrint');
-        reactToPrint();
-      } else {
-        console.error('reactToPrint is not available');
-        // Fallback to window.print() if reactToPrint is not available
-        console.log('Falling back to window.print()');
-        window.print();
-      }
-    } catch (error) {
-      console.error('Error during print:', error);
-      // Last resort fallback
-      alert('Print function failed. Please try again.');
-      // Close the modal if there's an error
-      onClose();
-    }
-  }, [reactToPrint, onClose]);
+  // Reference for direct printing
   
-  // Automatically print when component mounts
-  React.useEffect(() => {
-    // Don't try to print if still loading
-    if (isLoading) {
-      console.log('OldBatteryPrint: Still loading, not printing yet');
-      return;
-    }
-    
-    console.log('OldBatteryPrint: Loading complete, printing after delay');
-    // Small delay to ensure the component is fully rendered
-    const timer = setTimeout(() => {
-      console.log('OldBatteryPrint: Ready to print, triggering print function');
-      // Automatically trigger print after component is ready
-      if (reactToPrint) {
-        reactToPrint();
-      }
-    }, 1000);
-    
-    return () => {
-      console.log('OldBatteryPrint: Cleaning up timers');
-      clearTimeout(timer);
-    };
-  }, [isLoading, reactToPrint, oldBattery.id]);
-
+  // Component rendering
   // Calculate net amount
   const netAmount = (oldBattery.deductionAmount || 0) - (oldBattery.discount || 0);
   
@@ -114,25 +43,6 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold">Invoice #{oldBattery.invoiceNumber}</h2>
-          <div className="flex space-x-2">
-            <Button 
-              variant="primary"
-              icon={Printer}
-              onClick={handlePrint}
-              disabled={isLoading}
-            >
-              Print Invoice
-            </Button>
-            <Button 
-              variant="secondary" 
-              icon={Printer}
-              onClick={() => directPrint(invoiceRef, `Invoice-${oldBattery.invoiceNumber}`)}
-              disabled={isLoading}
-            >
-              Direct Print
-            </Button>
-            <Button variant="secondary" onClick={onClose}>Close</Button>
-          </div>
         </div>
 
         <div className="overflow-auto p-6">
@@ -259,6 +169,20 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
                 {printSettings.footerText && (
                   <p className="whitespace-pre-line">{printSettings.footerText}</p>
                 )}
+              </div>
+              
+              {/* Print Buttons */}
+              <div className="flex justify-center space-x-2 mt-4 print:hidden">
+                <Button 
+                  variant="success" 
+                  icon={Printer}
+                  onClick={() => directPrint(invoiceRef, `Invoice-${oldBattery.invoiceNumber}`)}
+                  disabled={isLoading}
+                  className="text-sm"
+                >
+                  Direct Print
+                </Button>
+                <Button variant="secondary" onClick={onClose} className="text-sm">Close</Button>
               </div>
             </div>
           )}

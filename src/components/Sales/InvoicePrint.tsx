@@ -1,9 +1,7 @@
-import React, { useRef, useCallback } from 'react';
-import { useReactToPrint } from 'react-to-print';
+import React, { useRef } from 'react';
 import { Sale, SaleItem, Customer, Product } from '../../types';
 import Button from '../Common/Button';
 import { Printer } from 'lucide-react';
-import { isElectron, printToPDF } from '../../services/electronBridge';
 import { getCompanyInfo, getPrintSettings, directPrint } from '../../utils/printUtils';
 
 interface InvoicePrintProps {
@@ -30,81 +28,9 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
   const companyInfo = getCompanyInfo();
   const printSettings = getPrintSettings();
 
-  // Use useReactToPrint hook for browser printing
-  const reactToPrint = useReactToPrint({
-    content: () => invoiceRef.current,
-    documentTitle: `Invoice-${sale.invoiceNumber}`,
-    onBeforeGetContent: () => {
-      console.log('Before getting content for printing');
-      return Promise.resolve();
-    },
-    onAfterPrint: () => {
-      console.log('Printed successfully');
-      // Close the modal after printing is complete
-      onClose();
-    },
-    onPrintError: (error) => {
-      console.error('Print error:', error);
-      // Close the modal if there's an error
-      onClose();
-    }
-  });
+  // Reference for direct printing
 
-  // Handle print function
-  const handlePrint = useCallback(() => {
-    console.log('Print function called');
-
-    try {
-      // Always use browser printing to ensure it works
-      console.log('Using browser printing');
-      if (reactToPrint) {
-        // Force a longer timeout to ensure the DOM is ready
-        setTimeout(() => {
-          console.log('Executing reactToPrint after delay');
-          reactToPrint();
-        }, 500); // Increased from 100ms to 500ms for reliability
-      } else {
-        console.error('reactToPrint is not available');
-        // Fallback to window.print() if reactToPrint is not available
-        setTimeout(() => {
-          console.log('Falling back to window.print()');
-          window.print();
-          // Ensure we close the modal even if print dialog is canceled
-          setTimeout(() => {
-            onClose();
-          }, 1000);
-        }, 500);
-      }
-    } catch (error) {
-      console.error('Error during print:', error);
-      // Last resort fallback
-      alert('Print function failed. Please try again.');
-      // Make sure we close the modal even if there's an error
-      onClose();
-    }
-  }, [reactToPrint, sale.invoiceNumber, onClose]);
-
-  // Automatically print when component mounts
-  React.useEffect(() => {
-    // Don't try to print if still loading
-    if (isLoading) {
-      console.log('InvoicePrint: Still loading, not printing yet');
-      return;
-    }
-    
-    console.log('InvoicePrint: Loading complete, printing after delay');
-    // Small delay to ensure the component is fully rendered
-    const timer = setTimeout(() => {
-      console.log('InvoicePrint: Ready for user to click print');
-      // We'll use a user interaction to trigger print instead of automatic printing
-      // This helps with browser security policies that may block automatic printing
-    }, 500);
-    
-    return () => {
-      console.log('InvoicePrint: Cleaning up timers');
-      clearTimeout(timer);
-    };
-  }, [isLoading]);
+  // Component rendering
 
   // Get product details for a sale item
   const getProductDetails = (item: SaleItem) => {
@@ -139,30 +65,6 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
       }}>
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold">Invoice #{sale.invoiceNumber}</h2>
-          <div className="flex space-x-2">
-            <Button 
-              variant="primary"
-              icon={Printer}
-              onClick={handlePrint}
-              disabled={isLoading}
-            >
-              Print Invoice
-            </Button>
-            <Button 
-              variant="success"
-              icon={Printer}
-              onClick={() => {
-                console.log('Direct print button clicked');
-                if (!isLoading && invoiceRef.current) {
-                  directPrint(invoiceRef, `Invoice-${sale.invoiceNumber}`);
-                }
-              }}
-              disabled={isLoading}
-            >
-              Direct Print
-            </Button>
-            <Button variant="secondary" onClick={onClose}>Close</Button>
-          </div>
         </div>
 
         <div className="overflow-auto p-6">
@@ -315,6 +217,25 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                 {printSettings.footerText && (
                   <p className="whitespace-pre-line">{printSettings.footerText}</p>
                 )}
+              </div>
+              
+              {/* Print Buttons */}
+              <div className="flex justify-center space-x-2 mt-4 print:hidden">
+                <Button 
+                  variant="success"
+                  icon={Printer}
+                  onClick={() => {
+                    console.log('Direct print button clicked');
+                    if (!isLoading && invoiceRef.current) {
+                      directPrint(invoiceRef, `Invoice-${sale.invoiceNumber}`);
+                    }
+                  }}
+                  disabled={isLoading}
+                  className="text-sm"
+                >
+                  Direct Print
+                </Button>
+                <Button variant="secondary" onClick={onClose} className="text-sm">Close</Button>
               </div>
             </div>
           )}
