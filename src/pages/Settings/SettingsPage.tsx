@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Card from '../../components/Common/Card';
 import Button from '../../components/Common/Button';
 import { Settings, Store, Printer, Database, Lock } from 'lucide-react';
@@ -6,8 +6,10 @@ import { FirebaseService } from '../../services/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
-import { auth } from '../../config/firebase';
+import { auth, database } from '../../config/firebase';
 import PasswordChangeForm from '../../components/Settings/PasswordChangeForm';
+import { ref, get, set } from 'firebase/database';
+import Modal from '../../components/Common/Modal';
 
 interface CompanyInfo {
   name: string;
@@ -44,6 +46,13 @@ const SettingsPage: React.FC = () => {
     strn: 'STRN-67890',
     logo: null
   });
+  
+  // Database backup and restore states
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isRestoring, setIsRestoring] = useState<boolean>(false);
+  const [isDownloading, setIsDownloading] = useState<boolean>(false);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Load settings from Firebase and localStorage on component mount
   useEffect(() => {
@@ -164,8 +173,162 @@ const SettingsPage: React.FC = () => {
     }
   };
   
+  // Handle file selection for database restore
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+  
+  // Download database backup
+  const handleDownloadBackup = async () => {
+    if (!user) {
+      showToast('You must be logged in to download a backup', 'error');
+      return;
+    }
+    
+    setIsDownloading(true);
+    
+    try {
+      // Fetch all user data from Firebase
+      const userDataRef = ref(database, `users/${user.id}`);
+      const snapshot = await get(userDataRef);
+      const userData = snapshot.val();
+      
+      if (!userData) {
+        showToast('No data found to backup', 'error');
+        setIsDownloading(false);
+        return;
+      }
+      
+      // Create a JSON file with the data
+      const dataStr = JSON.stringify(userData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      
+      // Create a download link and trigger the download
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `inventory_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setIsDownloading(false);
+      showToast('Backup downloaded successfully!', 'success');
+    } catch (error) {
+      console.error('Error downloading backup:', error);
+      setIsDownloading(false);
+      showToast('Error creating backup. Please try again.', 'error');
+    }
+  };
+  
+  // Restore database from backup file
+  const handleRestoreBackup = async () => {
+    if (!user) {
+      showToast('You must be logged in to restore a backup', 'error');
+      return;
+    }
+    
+    if (!selectedFile) {
+      showToast('Please select a backup file first', 'error');
+      return;
+    }
+    
+    // Show confirmation modal before proceeding
+    setShowConfirmModal(true);
+  };
+  
+  // Confirm and execute database restore
+  const confirmRestore = async () => {
+    if (!selectedFile || !user) return;
+    
+    setIsRestoring(true);
+    setShowConfirmModal(false);
+    
+    try {
+      // Read the backup file
+      const fileReader = new FileReader();
+      
+      fileReader.onload = async (event) => {
+        try {
+          if (!event.target || typeof event.target.result !== 'string') {
+            throw new Error('Failed to read backup file');
+          }
+          
+          const backupData = JSON.parse(event.target.result);
+          
+          // Validate the backup data structure
+          if (!backupData || typeof backupData !== 'object') {
+            throw new Error('Invalid backup file format');
+          }
+          
+          // Write the backup data to Firebase
+          const userDataRef = ref(database, `users/${user.id}`);
+          await set(userDataRef, backupData);
+          
+          setIsRestoring(false);
+          setSelectedFile(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          
+          showToast('Database restored successfully!', 'success');
+          
+          // Reload the page to reflect the restored data
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } catch (error) {
+          console.error('Error restoring backup:', error);
+          setIsRestoring(false);
+          showToast('Error restoring backup. Please check the file format and try again.', 'error');
+        }
+      };
+      
+      fileReader.onerror = () => {
+        setIsRestoring(false);
+        showToast('Error reading backup file. Please try again.', 'error');
+      };
+      
+      fileReader.readAsText(selectedFile);
+    } catch (error) {
+      console.error('Error in restore process:', error);
+      setIsRestoring(false);
+      showToast('Error restoring backup. Please try again.', 'error');
+    }
+  };
+  
   return (
     <div className="space-y-6">
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <Modal
+          title="Confirm Database Restore"
+          onClose={() => setShowConfirmModal(false)}
+        >
+          <div className="p-6">
+            <p className="text-gray-700 mb-4">
+              Are you sure you want to restore your database from this backup file? This will replace all your current data and cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <Button 
+                variant="secondary" 
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="danger" 
+                onClick={confirmRestore}
+              >
+                Yes, Restore Database
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
@@ -482,8 +645,16 @@ const SettingsPage: React.FC = () => {
                   <div className="bg-blue-50 p-4 rounded-md">
                     <h3 className="text-md font-medium text-blue-800 mb-2">Backup Database</h3>
                     <p className="text-sm text-blue-700 mb-4">Create a backup of your current database. This will download a JSON file containing all your data.</p>
-                    <Button>
-                      Download Backup
+                    <Button 
+                      onClick={handleDownloadBackup}
+                      disabled={isDownloading}
+                    >
+                      {isDownloading ? (
+                        <>
+                          <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                          Downloading...
+                        </>
+                      ) : 'Download Backup'}
                     </Button>
                   </div>
                   
@@ -496,12 +667,18 @@ const SettingsPage: React.FC = () => {
                         accept=".json"
                         className="hidden"
                         id="restore-upload"
+                        onChange={handleFileSelect}
+                        ref={fileInputRef}
                       />
                       <label htmlFor="restore-upload" className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        Select Backup File
+                        {selectedFile ? selectedFile.name : 'Select Backup File'}
                       </label>
-                      <Button variant="warning">
-                        Restore
+                      <Button 
+                        variant="warning" 
+                        onClick={handleRestoreBackup}
+                        disabled={!selectedFile || isRestoring}
+                      >
+                        {isRestoring ? 'Restoring...' : 'Restore'}
                       </Button>
                     </div>
                   </div>
