@@ -6,14 +6,14 @@ import Card from '../../components/Common/Card';
 import Button from '../../components/Common/Button';
 import Table from '../../components/Common/Table';
 import { BarChart3, FileText, DollarSign, Calendar, Download, Printer } from 'lucide-react';
-import { Purchase, Sale, Product } from '../../types';
+import { Purchase, Sale, Product, Expense, Staff } from '../../types';
 import { generateCompanyInfoHTML } from '../../utils/printUtils';
 
 type ReportType = 'purchase' | 'stock' | 'profit';
 type DateRange = 'today' | 'week' | 'month' | 'custom';
 
 const ReportsPage: React.FC = () => {
-  const { purchases, sales, products, suppliers, customers, loading } = useApp();
+  const { purchases, sales, products, suppliers, customers, expenses, staff, loading } = useApp();
   const { showToast } = useToast();
   const [reportType, setReportType] = useState<ReportType>('purchase');
   const [dateRange, setDateRange] = useState<DateRange>('month');
@@ -69,7 +69,23 @@ const ReportsPage: React.FC = () => {
     return matchesDate && matchesSearch;
   });
 
-  // Calculate total purchase amount
+  // Filter expenses by date range and search term
+  const filteredExpenses = expenses.filter(expense => {
+    const matchesDate = filterByDateRange(expense.date);
+    const matchesSearch = searchTerm === '' || 
+      expense.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (expense.description && expense.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesDate && matchesSearch;
+  });
+
+  // Filter staff by search term (for paid salaries)
+  const filteredStaff = staff.filter(staffMember => 
+    searchTerm === '' || 
+    staffMember.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    staffMember.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Calculate total purchase amount (cost of goods sold)
   const totalPurchaseAmount = filteredPurchases.reduce(
     (sum, purchase) => sum + (purchase.netAmount || purchase.totalAmount), 
     0
@@ -81,8 +97,26 @@ const ReportsPage: React.FC = () => {
     0
   );
 
-  // Calculate profit
-  const profit = totalSalesAmount - totalPurchaseAmount;
+  // Calculate total paid expenses
+  const totalPaidExpenses = filteredExpenses.reduce(
+    (sum, expense) => sum + expense.amount,
+    0
+  );
+
+  // Calculate total paid staff salaries
+  const totalPaidSalaries = filteredStaff.reduce(
+    (sum, staffMember) => sum + (staffMember.salaryPaid || 0),
+    0
+  );
+
+  // Calculate total unpaid staff salaries (tracked but not subtracted from profit)
+  const totalUnpaidSalaries = filteredStaff.reduce(
+    (sum, staffMember) => sum + (staffMember.remainingSalary || 0),
+    0
+  );
+
+  // Calculate profit: total sales - cost of goods sold - paid expenses - paid staff salaries
+  const profit = totalSalesAmount - totalPurchaseAmount - totalPaidExpenses - totalPaidSalaries;
 
   // Purchase report columns
   const purchaseColumns = [
@@ -304,6 +338,85 @@ const ReportsPage: React.FC = () => {
         'Profit': item.profit.toFixed(2),
         'Profit Margin': item.profitMargin.toFixed(2) + '%'
       }));
+      
+      // Add summary row with overall profit calculation
+      data.push({
+        'Code': '',
+        'Product Name': '--- SUMMARY ---',
+        'Category': '',
+        'Sold Qty': '',
+        'Sale Amount': '',
+        'Cost Amount': '',
+        'Profit': '',
+        'Profit Margin': ''
+      });
+      
+      data.push({
+        'Code': '',
+        'Product Name': 'Total Sales',
+        'Category': '',
+        'Sold Qty': '',
+        'Sale Amount': totalSalesAmount.toFixed(2),
+        'Cost Amount': '',
+        'Profit': '',
+        'Profit Margin': ''
+      });
+      
+      data.push({
+        'Code': '',
+        'Product Name': 'Cost of Goods Sold',
+        'Category': '',
+        'Sold Qty': '',
+        'Sale Amount': '',
+        'Cost Amount': totalPurchaseAmount.toFixed(2),
+        'Profit': '',
+        'Profit Margin': ''
+      });
+      
+      data.push({
+        'Code': '',
+        'Product Name': 'Total Paid Expenses',
+        'Category': '',
+        'Sold Qty': '',
+        'Sale Amount': '',
+        'Cost Amount': totalPaidExpenses.toFixed(2),
+        'Profit': '',
+        'Profit Margin': ''
+      });
+      
+      data.push({
+        'Code': '',
+        'Product Name': 'Total Paid Staff Salaries',
+        'Category': '',
+        'Sold Qty': '',
+        'Sale Amount': '',
+        'Cost Amount': totalPaidSalaries.toFixed(2),
+        'Profit': '',
+        'Profit Margin': ''
+      });
+      
+      data.push({
+        'Code': '',
+        'Product Name': 'Net Profit',
+        'Category': '',
+        'Sold Qty': '',
+        'Sale Amount': '',
+        'Cost Amount': '',
+        'Profit': profit.toFixed(2),
+        'Profit Margin': ''
+      });
+      
+      data.push({
+        'Code': '',
+        'Product Name': 'Total Unpaid Staff Salaries (Not Deducted)',
+        'Category': '',
+        'Sold Qty': '',
+        'Sale Amount': '',
+        'Cost Amount': totalUnpaidSalaries.toFixed(2),
+        'Profit': '',
+        'Profit Margin': ''
+      });
+      
       filename = 'profit-report';
       headers = ['Code', 'Product Name', 'Category', 'Sold Qty', 'Sale Amount', 'Cost Amount', 'Profit', 'Profit Margin'];
     }
@@ -418,6 +531,54 @@ const ReportsPage: React.FC = () => {
             <td style="color: ${item.profitMargin >= 0 ? 'green' : 'red'}">${item.profitMargin.toFixed(2)}%</td>
         </tr>`;
       });
+      
+      // Add summary rows for profit calculation
+      tableHTML += `<tr style="background-color: #f3f4f6; font-weight: bold;">
+        <td colspan="8">SUMMARY</td>
+      </tr>`;
+      
+      tableHTML += `<tr>
+        <td colspan="4"></td>
+        <td>Total Sales</td>
+        <td>₨${totalSalesAmount.toFixed(2)}</td>
+        <td colspan="2"></td>
+      </tr>`;
+      
+      tableHTML += `<tr>
+        <td colspan="4"></td>
+        <td>Cost of Goods Sold</td>
+        <td>₨${totalPurchaseAmount.toFixed(2)}</td>
+        <td colspan="2"></td>
+      </tr>`;
+      
+      tableHTML += `<tr>
+        <td colspan="4"></td>
+        <td>Total Paid Expenses</td>
+        <td>₨${totalPaidExpenses.toFixed(2)}</td>
+        <td colspan="2"></td>
+      </tr>`;
+      
+      tableHTML += `<tr>
+        <td colspan="4"></td>
+        <td>Total Paid Staff Salaries</td>
+        <td>₨${totalPaidSalaries.toFixed(2)}</td>
+        <td colspan="2"></td>
+      </tr>`;
+      
+      tableHTML += `<tr>
+        <td colspan="4"></td>
+        <td>Net Profit</td>
+        <td></td>
+        <td style="color: ${profit >= 0 ? 'green' : 'red'}">₨${profit.toFixed(2)}</td>
+        <td></td>
+      </tr>`;
+      
+      tableHTML += `<tr>
+        <td colspan="4"></td>
+        <td>Total Unpaid Staff Salaries (Not Deducted)</td>
+        <td>₨${totalUnpaidSalaries.toFixed(2)}</td>
+        <td colspan="2"></td>
+      </tr>`;
     }
     
     tableHTML += '</tbody></table>';
@@ -437,7 +598,12 @@ const ReportsPage: React.FC = () => {
     }
     
     if (reportType === 'profit') {
+      summaryHTML += `<p><strong>Total Sales:</strong> ₨${totalSalesAmount.toFixed(2)}</p>`;
+      summaryHTML += `<p><strong>Cost of Goods Sold:</strong> ₨${totalPurchaseAmount.toFixed(2)}</p>`;
+      summaryHTML += `<p><strong>Total Paid Expenses:</strong> ₨${totalPaidExpenses.toFixed(2)}</p>`;
+      summaryHTML += `<p><strong>Total Paid Staff Salaries:</strong> ₨${totalPaidSalaries.toFixed(2)}</p>`;
       summaryHTML += `<p><strong>Net Profit:</strong> <span style="color: ${profit >= 0 ? 'green' : 'red'}">₨${profit.toFixed(2)}</span></p>`;
+      summaryHTML += `<p><strong>Total Unpaid Staff Salaries (Not Deducted):</strong> ₨${totalUnpaidSalaries.toFixed(2)}</p>`;
     }
     
     summaryHTML += '</div>';
@@ -673,12 +839,34 @@ const ReportsPage: React.FC = () => {
                 )}
                 
                 {reportType === 'profit' && (
-                  <div className="bg-white p-3 rounded-lg shadow-sm">
-                    <p className="text-sm text-gray-500">Net Profit</p>
-                    <p className={`font-medium ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ₨{profit.toFixed(2)}
-                    </p>
-                  </div>
+                  <>
+                    <div className="bg-white p-3 rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-500">Total Sales</p>
+                      <p className="font-medium">₨{totalSalesAmount.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-500">Cost of Goods Sold</p>
+                      <p className="font-medium">₨{totalPurchaseAmount.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-500">Total Paid Expenses</p>
+                      <p className="font-medium">₨{totalPaidExpenses.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-500">Total Paid Staff Salaries</p>
+                      <p className="font-medium">₨{totalPaidSalaries.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-500">Net Profit</p>
+                      <p className={`font-medium ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ₨{profit.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-500">Unpaid Staff Salaries (Not Deducted)</p>
+                      <p className="font-medium">₨{totalUnpaidSalaries.toFixed(2)}</p>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
