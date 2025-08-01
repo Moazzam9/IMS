@@ -203,36 +203,60 @@ const ReportsPage: React.FC = () => {
     (product.category && product.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Calculate profit data for products
-  const profitData = filteredProducts.map(product => {
-    const productSales = filteredSales
-      .flatMap(sale => sale.items)
-      .filter(item => item.productId === product.id);
-    
-    const totalSoldQuantity = productSales.reduce((sum, item) => sum + item.quantity, 0);
-    const totalSaleAmount = productSales.reduce((sum, item) => sum + item.total, 0);
-    const totalCostAmount = totalSoldQuantity * product.tradePrice;
-    const productProfit = totalSaleAmount - totalCostAmount;
-    
-    return {
-      id: product.id,
-      code: product.code,
-      name: product.name,
-      category: product.category,
-      soldQuantity: totalSoldQuantity,
-      saleAmount: totalSaleAmount,
-      costAmount: totalCostAmount,
-      profit: productProfit,
-      profitMargin: totalSaleAmount > 0 ? (productProfit / totalSaleAmount) * 100 : 0
-    };
-  }).filter(item => item.soldQuantity > 0);
+  // Group sales by invoice for reference
+  const salesByInvoice = filteredSales.reduce((acc, sale) => {
+    acc[sale.invoiceNumber] = sale;
+    return acc;
+  }, {} as Record<string, Sale>);
+
+  // Calculate profit data for products with sales information
+  const profitData = [];
+  
+  // Process each sale to include invoice information
+  filteredSales.forEach(sale => {
+    // Add each product from this sale
+    sale.items.forEach(item => {
+      const product = products.find(p => p.id === item.productId);
+      if (!product) return;
+      
+      const costAmount = item.quantity * product.tradePrice;
+      const productProfit = item.total - costAmount;
+      
+      profitData.push({
+        id: `${sale.id}-${item.id}`,
+        invoiceNumber: sale.invoiceNumber,
+        saleDate: sale.saleDate,
+        customerName: sale.customerName || (sale.customer ? sale.customer.name : 'Walk-in Customer'),
+        customerPhone: sale.customerPhone || (sale.customer ? sale.customer.phone : ''),
+        code: product.code,
+        name: product.name,
+        category: product.category,
+        soldQuantity: item.quantity,
+        saleAmount: item.total,
+        costAmount: costAmount,
+        profit: productProfit,
+        profitMargin: item.total > 0 ? (productProfit / item.total) * 100 : 0
+      });
+    });
+  });
+  
+  // Sort by sale date (newest first)
+  profitData.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
 
   // Profit report columns
   const profitColumns = [
+    { key: 'invoiceNumber', label: 'Invoice #' },
+    { 
+      key: 'saleDate', 
+      label: 'Date',
+      render: (value: string) => new Date(value).toLocaleDateString()
+    },
+    { key: 'customerName', label: 'Customer' },
+    { key: 'customerPhone', label: 'Phone' },
     { key: 'code', label: 'Code' },
     { key: 'name', label: 'Product Name' },
     { key: 'category', label: 'Category', render: (value: string) => value || 'N/A' },
-    { key: 'soldQuantity', label: 'Sold Qty' },
+    { key: 'soldQuantity', label: 'Qty' },
     { 
       key: 'saleAmount', 
       label: 'Sale Amount',
@@ -329,10 +353,14 @@ const ReportsPage: React.FC = () => {
       headers = ['Code', 'Product Name', 'Category', 'Current Stock', 'Unit', 'Min Stock Level', 'Trade Price', 'Sale Price', 'Stock Value'];
     } else if (reportType === 'profit') {
       data = profitData.map(item => ({
+        'Invoice #': item.invoiceNumber,
+        'Date': new Date(item.saleDate).toLocaleDateString(),
+        'Customer': item.customerName,
+        'Phone': item.customerPhone || '',
         'Code': item.code,
         'Product Name': item.name,
         'Category': item.category || 'N/A',
-        'Sold Qty': item.soldQuantity,
+        'Qty': item.soldQuantity,
         'Sale Amount': item.saleAmount.toFixed(2),
         'Cost Amount': item.costAmount.toFixed(2),
         'Profit': item.profit.toFixed(2),
@@ -341,10 +369,14 @@ const ReportsPage: React.FC = () => {
       
       // Add summary row with overall profit calculation
       data.push({
+        'Invoice #': '',
+        'Date': '',
+        'Customer': '',
+        'Phone': '',
         'Code': '',
         'Product Name': '--- SUMMARY ---',
         'Category': '',
-        'Sold Qty': '',
+        'Qty': '',
         'Sale Amount': '',
         'Cost Amount': '',
         'Profit': '',
@@ -352,10 +384,14 @@ const ReportsPage: React.FC = () => {
       });
       
       data.push({
+        'Invoice #': '',
+        'Date': '',
+        'Customer': '',
+        'Phone': '',
         'Code': '',
         'Product Name': 'Total Sales',
         'Category': '',
-        'Sold Qty': '',
+        'Qty': '',
         'Sale Amount': totalSalesAmount.toFixed(2),
         'Cost Amount': '',
         'Profit': '',
@@ -363,10 +399,14 @@ const ReportsPage: React.FC = () => {
       });
       
       data.push({
+        'Invoice #': '',
+        'Date': '',
+        'Customer': '',
+        'Phone': '',
         'Code': '',
         'Product Name': 'Cost of Goods Sold',
         'Category': '',
-        'Sold Qty': '',
+        'Qty': '',
         'Sale Amount': '',
         'Cost Amount': totalPurchaseAmount.toFixed(2),
         'Profit': '',
@@ -374,10 +414,14 @@ const ReportsPage: React.FC = () => {
       });
       
       data.push({
+        'Invoice #': '',
+        'Date': '',
+        'Customer': '',
+        'Phone': '',
         'Code': '',
         'Product Name': 'Total Paid Expenses',
         'Category': '',
-        'Sold Qty': '',
+        'Qty': '',
         'Sale Amount': '',
         'Cost Amount': totalPaidExpenses.toFixed(2),
         'Profit': '',
@@ -385,10 +429,14 @@ const ReportsPage: React.FC = () => {
       });
       
       data.push({
+        'Invoice #': '',
+        'Date': '',
+        'Customer': '',
+        'Phone': '',
         'Code': '',
         'Product Name': 'Total Paid Staff Salaries',
         'Category': '',
-        'Sold Qty': '',
+        'Qty': '',
         'Sale Amount': '',
         'Cost Amount': totalPaidSalaries.toFixed(2),
         'Profit': '',
@@ -396,10 +444,14 @@ const ReportsPage: React.FC = () => {
       });
       
       data.push({
+        'Invoice #': '',
+        'Date': '',
+        'Customer': '',
+        'Phone': '',
         'Code': '',
         'Product Name': 'Net Profit',
         'Category': '',
-        'Sold Qty': '',
+        'Qty': '',
         'Sale Amount': '',
         'Cost Amount': '',
         'Profit': profit.toFixed(2),
@@ -407,10 +459,14 @@ const ReportsPage: React.FC = () => {
       });
       
       data.push({
+        'Invoice #': '',
+        'Date': '',
+        'Customer': '',
+        'Phone': '',
         'Code': '',
         'Product Name': 'Total Unpaid Staff Salaries (Not Deducted)',
         'Category': '',
-        'Sold Qty': '',
+        'Qty': '',
         'Sale Amount': '',
         'Cost Amount': totalUnpaidSalaries.toFixed(2),
         'Profit': '',
@@ -418,7 +474,7 @@ const ReportsPage: React.FC = () => {
       });
       
       filename = 'profit-report';
-      headers = ['Code', 'Product Name', 'Category', 'Sold Qty', 'Sale Amount', 'Cost Amount', 'Profit', 'Profit Margin'];
+      headers = ['Invoice #', 'Date', 'Customer', 'Phone', 'Code', 'Product Name', 'Category', 'Qty', 'Sale Amount', 'Cost Amount', 'Profit', 'Profit Margin'];
     }
     
     // Add date range to filename
@@ -515,58 +571,62 @@ const ReportsPage: React.FC = () => {
         </tr>`;
       });
     } else if (reportType === 'profit') {
-      tableHTML += '<th>Code</th><th>Product Name</th><th>Category</th><th>Sold Qty</th><th>Sale Amount</th><th>Cost Amount</th><th>Profit</th><th>Profit Margin</th>';
+      tableHTML += '<th>Invoice #</th><th>Date</th><th>Customer</th><th>Phone</th><th>Code</th><th>Product Name</th><th>Category</th><th>Qty</th><th>Sale Amount</th><th>Cost Amount</th><th>Profit</th><th>Profit Margin</th>';
       
       // Table body
       tableHTML += '</tr></thead><tbody>';
       profitData.forEach(item => {
         tableHTML += `<tr>
+          <td>${item.invoiceNumber}</td>
+          <td>${new Date(item.saleDate).toLocaleDateString()}</td>
+          <td>${item.customerName}</td>
+          <td>${item.customerPhone || ''}</td>
           <td>${item.code}</td>
           <td>${item.name}</td>
           <td>${item.category || 'N/A'}</td>
           <td>${item.soldQuantity}</td>
           <td>₨${item.saleAmount.toFixed(2)}</td>
-            <td>₨${item.costAmount.toFixed(2)}</td>
-            <td style="color: ${item.profit >= 0 ? 'green' : 'red'}">₨${item.profit.toFixed(2)}</td>
-            <td style="color: ${item.profitMargin >= 0 ? 'green' : 'red'}">${item.profitMargin.toFixed(2)}%</td>
+          <td>₨${item.costAmount.toFixed(2)}</td>
+          <td style="color: ${item.profit >= 0 ? 'green' : 'red'}">₨${item.profit.toFixed(2)}</td>
+          <td style="color: ${item.profitMargin >= 0 ? 'green' : 'red'}">${item.profitMargin.toFixed(2)}%</td>
         </tr>`;
       });
       
       // Add summary rows for profit calculation
       tableHTML += `<tr style="background-color: #f3f4f6; font-weight: bold;">
-        <td colspan="8">SUMMARY</td>
+        <td colspan="12">SUMMARY</td>
       </tr>`;
       
       tableHTML += `<tr>
-        <td colspan="4"></td>
+        <td colspan="8"></td>
         <td>Total Sales</td>
         <td>₨${totalSalesAmount.toFixed(2)}</td>
         <td colspan="2"></td>
       </tr>`;
       
       tableHTML += `<tr>
-        <td colspan="4"></td>
+        <td colspan="8"></td>
         <td>Cost of Goods Sold</td>
         <td>₨${totalPurchaseAmount.toFixed(2)}</td>
         <td colspan="2"></td>
       </tr>`;
       
       tableHTML += `<tr>
-        <td colspan="4"></td>
+        <td colspan="8"></td>
         <td>Total Paid Expenses</td>
         <td>₨${totalPaidExpenses.toFixed(2)}</td>
         <td colspan="2"></td>
       </tr>`;
       
       tableHTML += `<tr>
-        <td colspan="4"></td>
+        <td colspan="8"></td>
         <td>Total Paid Staff Salaries</td>
         <td>₨${totalPaidSalaries.toFixed(2)}</td>
         <td colspan="2"></td>
       </tr>`;
       
       tableHTML += `<tr>
-        <td colspan="4"></td>
+        <td colspan="8"></td>
         <td>Net Profit</td>
         <td></td>
         <td style="color: ${profit >= 0 ? 'green' : 'red'}">₨${profit.toFixed(2)}</td>
@@ -574,7 +634,7 @@ const ReportsPage: React.FC = () => {
       </tr>`;
       
       tableHTML += `<tr>
-        <td colspan="4"></td>
+        <td colspan="8"></td>
         <td>Total Unpaid Staff Salaries (Not Deducted)</td>
         <td>₨${totalUnpaidSalaries.toFixed(2)}</td>
         <td colspan="2"></td>
