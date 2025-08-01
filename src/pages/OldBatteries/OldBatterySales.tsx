@@ -62,6 +62,7 @@ const OldBatterySales: React.FC = () => {
           id: sale.id,
           invoiceNumber: sale.invoiceNumber,
           customerName: sale.customerName,
+          customerPhone: sale.customerPhone || '',
           saleDate: sale.saleDate,
           name: sale.oldBatteryDetails?.name,
           weight: sale.oldBatteryDetails?.weight,
@@ -171,6 +172,7 @@ const OldBatterySales: React.FC = () => {
           id: sale.id,
           invoiceNumber: sale.invoiceNumber,
           customerName: sale.customerName,
+          customerPhone: sale.customerPhone || '',
           saleDate: sale.saleDate,
           name: sale.oldBatteryDetails?.name,
           weight: sale.oldBatteryDetails?.weight,
@@ -201,8 +203,11 @@ const OldBatterySales: React.FC = () => {
       console.log('Print button clicked for old battery sale:', sale.id);
       // Set loading state to true initially
       setIsLoadingInvoice(true);
-      // Set the selected battery for print
-      setSelectedBatteryForPrint(sale);
+      // Set the selected battery for print, ensuring customerPhone is included
+      setSelectedBatteryForPrint({
+        ...sale,
+        customerPhone: sale.customerPhone || ''
+      });
       
       // Reset loading state after a short delay to ensure data is loaded
       setTimeout(() => {
@@ -449,6 +454,7 @@ const OldBatterySales: React.FC = () => {
         id: sale.id,
         invoiceNumber: sale.invoiceNumber,
         customerName: sale.customerName,
+        customerPhone: sale.customerPhone || '',
         saleDate: sale.saleDate,
         name: sale.oldBatteryDetails?.name,
         weight: sale.oldBatteryDetails?.weight,

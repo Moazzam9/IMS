@@ -29,6 +29,7 @@ export class OldBatteryService {
           invoiceNumber: batteryData.invoiceNumber,
           customerId: batteryData.customerId || '',
           customerName: batteryData.customerName || '',
+          customerPhone: batteryData.customerPhone || '',
           salesperson: batteryData.salesperson || '',
           saleDate: batteryData.saleDate || timestamp,
           status: batteryData.status || 'completed',
