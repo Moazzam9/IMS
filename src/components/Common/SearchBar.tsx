@@ -78,7 +78,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           </button>
             
             {isFilterOpen && (
-              <div className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-nihal-yellow ring-opacity-50 focus:outline-none">
+              <div className="absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-nihal-yellow ring-opacity-50 focus:outline-none">
                 <div className="py-1">
                   {allFilters.map((option) => {
                     const optionValue = option.key || option.value || '';

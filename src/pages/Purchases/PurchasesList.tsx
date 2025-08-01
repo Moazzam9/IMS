@@ -129,6 +129,7 @@ const PurchasesList: React.FC = () => {
         await updateStockAndBalance(purchaseId, purchaseData);
       }
 
+      // Close the modal and reset form
       setIsModalOpen(false);
       setEditingPurchase(null);
       setFormData({
@@ -138,6 +139,9 @@ const PurchasesList: React.FC = () => {
         status: 'pending'
       });
       setPurchaseItems([]);
+      
+      // Refresh the page to show the updated data
+      window.location.reload();
     } catch (error) {
       console.error('Error saving purchase:', error);
       showToast('Error saving purchase. Please try again.', 'error');
