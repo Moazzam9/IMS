@@ -111,6 +111,7 @@ const SalesList: React.FC = () => {
     invoiceNumber: '',
     customerId: '',
     customerName: '',
+    customerPhone: '',
     salesperson: '',
     saleDate: new Date().toISOString().slice(0, 16), // Include date and time (YYYY-MM-DDTHH:MM)
     discount: 0,
@@ -374,6 +375,7 @@ const SalesList: React.FC = () => {
         invoiceNumber: '',
         customerId: '',
         customerName: '',
+        customerPhone: '',
         salesperson: '',
         saleDate: new Date().toISOString().slice(0, 16),
         discount: 0,
@@ -400,15 +402,16 @@ const SalesList: React.FC = () => {
   const handleEdit = async (sale: Sale) => {
     setEditingSale(sale);
     setFormData({
-      invoiceNumber: sale.invoiceNumber,
-      customerId: sale.customerId || '',
-      customerName: sale.customerName || '',
-      salesperson: sale.salesperson || '',
-      saleDate: sale.saleDate,
-      discount: sale.discount,
-      amountPaid: sale.amountPaid || 0,
-      status: sale.status
-    });
+        invoiceNumber: sale.invoiceNumber,
+        customerId: sale.customerId || '',
+        customerName: sale.customerName || '',
+        customerPhone: sale.customerPhone || '',
+        salesperson: sale.salesperson || '',
+        saleDate: sale.saleDate,
+        discount: sale.discount,
+        amountPaid: sale.amountPaid || 0,
+        status: sale.status
+      });
 
     try {
       // Load sale items for this sale
@@ -799,7 +802,7 @@ const SalesList: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Customer Name (Manual)
@@ -809,6 +812,18 @@ const SalesList: React.FC = () => {
                 value={formData.customerName}
                 onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
                 placeholder="Enter customer name manually"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Customer Phone
+              </label>
+              <input
+                type="tel"
+                value={formData.customerPhone}
+                onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                placeholder="Enter customer phone number"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>

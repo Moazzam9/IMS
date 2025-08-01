@@ -4,8 +4,8 @@ import Button from '../Common/Button';
 import { Printer } from 'lucide-react';
 import { getCompanyInfo, getPrintSettings, directPrint } from '../../utils/printUtils';
 
-interface OldBatteryPrintProps {
-  oldBattery: OldBattery;
+export interface OldBatteryPrintProps {
+  oldBattery: OldBattery & { customerPhone?: string };
   onClose: () => void;
   isLoading?: boolean;
 }
@@ -115,6 +115,12 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
                       <td style={{ fontWeight: 'bold', padding: '1px 4px 1px 0' }}>Customer:</td>
                       <td>{oldBattery.customerName || 'Walk-in Customer'}</td>
                     </tr>
+                    {oldBattery.customerPhone && (
+                      <tr>
+                        <td style={{ fontWeight: 'bold', padding: '1px 4px 1px 0' }}>Phone:</td>
+                        <td>{oldBattery.customerPhone}</td>
+                      </tr>
+                    )}
                     {oldBattery.salesperson && (
                       <tr>
                         <td style={{ fontWeight: 'bold', padding: '1px 4px 1px 0' }}>Salesperson:</td>

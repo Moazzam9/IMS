@@ -78,6 +78,7 @@ export interface Sale {
   customerId?: string;
   customer?: Customer;
   customerName?: string; // For manually entered customer name
+  customerPhone?: string; // For manually entered customer phone
   salesperson?: string; // For salesperson name
   totalAmount: number;
   discount: number;
@@ -154,6 +155,7 @@ export interface OldBattery {
   amountPaid: number;
   invoiceNumber: string;
   customerName?: string;
+  customerPhone?: string;
   saleDate: string;
   status: 'completed' | 'pending';
   saleId: string;

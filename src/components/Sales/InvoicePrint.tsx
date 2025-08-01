@@ -131,10 +131,10 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                         <td>{customer.address}</td>
                       </tr>
                     )}
-                    {customer?.phone && (
+                    {(customer?.phone || sale.customerPhone) && (
                       <tr>
                         <td style={{ fontWeight: 'bold', padding: '1px 4px 1px 0' }}>Phone:</td>
-                        <td>{customer.phone}</td>
+                        <td>{customer?.phone || sale.customerPhone}</td>
                       </tr>
                     )}
                     {sale.salesperson && (

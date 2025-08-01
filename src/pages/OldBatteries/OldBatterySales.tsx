@@ -26,6 +26,7 @@ const OldBatterySales: React.FC = () => {
     invoiceNumber: '',
     customerId: '',
     customerName: '',
+    customerPhone: '',
     salesperson: '',
     saleDate: new Date().toISOString().split('T')[0],
     discount: 0,
@@ -389,6 +390,7 @@ const OldBatterySales: React.FC = () => {
         invoiceNumber: formData.invoiceNumber,
         customerId: formData.customerId,
         customerName: formData.customerName,
+        customerPhone: formData.customerPhone,
         salesperson: formData.salesperson,
         saleDate: formData.saleDate,
         status: formData.status,
@@ -430,6 +432,7 @@ const OldBatterySales: React.FC = () => {
         invoiceNumber: '',
         customerId: '',
         customerName: '',
+        customerPhone: '',
         salesperson: '',
         saleDate: new Date().toISOString().split('T')[0],
         discount: 0,
@@ -666,6 +669,7 @@ const OldBatterySales: React.FC = () => {
             invoiceNumber: '',
             customerId: '',
             customerName: '',
+            customerPhone: '',
             salesperson: '',
             saleDate: new Date().toISOString().split('T')[0],
             discount: 0,
@@ -715,7 +719,7 @@ const OldBatterySales: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Customer Name (Manual)
@@ -725,6 +729,18 @@ const OldBatterySales: React.FC = () => {
                 value={formData.customerName}
                 onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
                 placeholder="Enter customer name manually"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Customer Phone
+              </label>
+              <input
+                type="tel"
+                value={formData.customerPhone}
+                onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                placeholder="Enter customer phone number"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
