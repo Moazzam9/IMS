@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import ResetButton from '../../components/Common/ResetButton';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import Card from '../../components/Common/Card';
@@ -480,6 +481,17 @@ const OldBatterySales: React.FC = () => {
       )}
       
       <div className="flex justify-between items-center">
+        <div className="flex space-x-2">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setSearchTerm('');
+              setSearchFilter('invoiceNumber');
+            }}
+          >
+            Reset Filters
+          </Button>
+        </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center">
             <Battery size={24} className="mr-2 text-blue-600" />
@@ -487,7 +499,9 @@ const OldBatterySales: React.FC = () => {
           </h1>
           <p className="text-gray-600">View records of old batteries currently being sold (not previously purchased) with sale information</p>
         </div>
-        <Button icon={Plus} onClick={async () => {
+        <div className="flex space-x-3">
+          <ResetButton section="oldBatterySales" onReset={() => setOldBatteries([])} />
+          <Button icon={Plus} onClick={async () => {
           // Only generate a new invoice number when adding a new sale (not editing)
           if (!editingSale) {
             try {
@@ -508,6 +522,7 @@ const OldBatterySales: React.FC = () => {
         }}>
           Add Old Battery Sale
         </Button>
+        </div>
       </div>
 
       <Card>

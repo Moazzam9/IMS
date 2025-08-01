@@ -6,6 +6,7 @@ import Button from '../../components/Common/Button';
 import Table from '../../components/Common/Table';
 import Modal from '../../components/Common/Modal';
 import SearchBar from '../../components/Common/SearchBar';
+import ResetButton from '../../components/Common/ResetButton';
 import { Plus, Edit, Trash2, ShoppingCart, Eye } from 'lucide-react';
 import { Purchase, PurchaseItem, StockMovement } from '../../types';
 import { FirebaseService } from '../../services/firebase';
@@ -343,9 +344,12 @@ const PurchasesList: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Purchases</h1>
           <p className="text-gray-600">Manage your purchase orders and inventory</p>
         </div>
-        <Button icon={Plus} onClick={() => setIsModalOpen(true)}>
-          Add Purchase
-        </Button>
+        <div className="flex space-x-3">
+          <ResetButton section="purchases" onReset={() => window.location.reload()} />
+          <Button icon={Plus} onClick={() => setIsModalOpen(true)}>
+            Add Purchase
+          </Button>
+        </div>
       </div>
 
       <Card>

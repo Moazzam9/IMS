@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ResetButton from '../../components/Common/ResetButton';
 import { useApp } from '../../contexts/AppContext';
 import { useToast } from '../../contexts/ToastContext';
 import Card from '../../components/Common/Card';
@@ -494,6 +495,7 @@ const ReportsPage: React.FC = () => {
           <p className="text-gray-600">Generate and view business reports</p>
         </div>
         <div className="flex space-x-2">
+          <ResetButton section="reports" />
           <Button icon={Printer} className="bg-nihal-blue text-white hover:bg-nihal-blue/90" onClick={printReport}>
             Print Report
           </Button>

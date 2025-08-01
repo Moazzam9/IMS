@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import ResetButton from '../../components/Common/ResetButton';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -707,9 +708,12 @@ const SalesList: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Sales</h1>
           <p className="text-gray-600">Manage your sales and customer transactions</p>
         </div>
-        <Button icon={Plus} onClick={() => setIsModalOpen(true)}>
-          Add Sale
-        </Button>
+        <div className="flex space-x-3">
+          <ResetButton section="sales" onReset={() => setSales([])} />
+          <Button icon={Plus} onClick={() => setIsModalOpen(true)}>
+            Add Sale
+          </Button>
+        </div>
       </div>
 
       <Card className="mb-6">

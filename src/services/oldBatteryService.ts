@@ -146,15 +146,45 @@ export class OldBatteryService {
       const soldBatteries = [];
       
       // Process all sales to extract sold batteries
-      oldBatterySales.forEach(sale => {
-        if (sale.oldBatteryDetails) {
-          soldBatteries.push({
-            name: sale.oldBatteryDetails.name,
-            weight: sale.oldBatteryDetails.weight || 0,
-            quantity: sale.oldBatteryDetails.quantity || 1
-          });
+      // If oldBatterySales is empty (after reset), check the backup
+      if (oldBatterySales.length === 0) {
+        // Try to get data from backup
+        try {
+          const backupRef = ref(database, `users/${userId}/oldBatterySalesBackup`);
+          const backupSnapshot = await get(backupRef);
+          
+          if (backupSnapshot.exists()) {
+            const backupData = backupSnapshot.val();
+            // Convert object to array
+            const backupSales = Object.values(backupData);
+            
+            // Process backup sales the same way as regular sales
+            backupSales.forEach((sale: any) => {
+              if (sale.oldBatteryDetails) {
+                soldBatteries.push({
+                  name: sale.oldBatteryDetails.name,
+                  weight: sale.oldBatteryDetails.weight || 0,
+                  quantity: sale.oldBatteryDetails.quantity || 1
+                });
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error getting backup sales data:', error);
+          // Continue with empty soldBatteries if backup fails
         }
-      });
+      } else {
+        // Process regular sales to extract sold batteries
+        oldBatterySales.forEach(sale => {
+          if (sale.oldBatteryDetails) {
+            soldBatteries.push({
+              name: sale.oldBatteryDetails.name,
+              weight: sale.oldBatteryDetails.weight || 0,
+              quantity: sale.oldBatteryDetails.quantity || 1
+            });
+          }
+        });
+      }
       
       console.log('Sold batteries:', soldBatteries);
       

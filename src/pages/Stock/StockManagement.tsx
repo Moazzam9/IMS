@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ResetButton from '../../components/Common/ResetButton';
 import { useApp } from '../../contexts/AppContext';
 import Card from '../../components/Common/Card';
 import Table from '../../components/Common/Table';
@@ -87,6 +88,7 @@ const StockManagement: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Stock Management</h1>
           <p className="text-gray-600">Track your inventory movements and stock levels</p>
         </div>
+        <ResetButton section="stock" onReset={() => window.location.reload()} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
