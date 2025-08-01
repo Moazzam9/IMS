@@ -40,9 +40,22 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col relative">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold">Invoice #{oldBattery.invoiceNumber}</h2>
+          {/* Print Buttons - Positioned at the top right */}
+          <div className="flex space-x-2 print:hidden">
+            <Button 
+              variant="success" 
+              icon={Printer}
+              onClick={() => directPrint(invoiceRef, `Invoice-${oldBattery.invoiceNumber}`)}
+              disabled={isLoading}
+              className="text-sm"
+            >
+              Print
+            </Button>
+            <Button variant="secondary" onClick={onClose} className="text-sm">Close</Button>
+          </div>
         </div>
 
         <div className="overflow-auto p-6">
@@ -59,8 +72,8 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
                 width: printSettings.paperSize === 'thermal' ? '80mm' : 'auto',
                 maxWidth: printSettings.paperSize === 'thermal' ? '80mm' : 'auto',
                 margin: '0 auto',
-                fontSize: printSettings.paperSize === 'thermal' ? '12px' : '14px',
-                lineHeight: printSettings.paperSize === 'thermal' ? '1.2' : '1.5',
+                fontSize: printSettings.paperSize === 'thermal' ? '18px' : '16px',
+                lineHeight: printSettings.paperSize === 'thermal' ? '1.3' : '1.5',
                 textAlign: 'center'
               }}
             >
@@ -173,19 +186,7 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
                 )}
               </div>
               
-              {/* Print Buttons */}
-              <div className="flex justify-center space-x-2 mt-4 print:hidden">
-                <Button 
-                  variant="success" 
-                  icon={Printer}
-                  onClick={() => directPrint(invoiceRef, `Invoice-${oldBattery.invoiceNumber}`)}
-                  disabled={isLoading}
-                  className="text-sm"
-                >
-                  Direct Print
-                </Button>
-                <Button variant="secondary" onClick={onClose} className="text-sm">Close</Button>
-              </div>
+              {/* Footer content ends here */}
             </div>
           )}
         </div>

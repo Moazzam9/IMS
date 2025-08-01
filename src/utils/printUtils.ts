@@ -93,6 +93,9 @@ export const directPrint = (contentRef: React.RefObject<HTMLElement>, documentTi
                 margin: 0; 
                 padding: 0; 
               }
+              .print\:hidden, button, .print-hidden {
+                display: none !important;
+              }
             }
             table { border-collapse: collapse; width: 100%; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }

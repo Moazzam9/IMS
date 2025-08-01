@@ -67,7 +67,7 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
           <h2 className="text-xl font-bold">Invoice #{sale.invoiceNumber}</h2>
         </div>
 
-        <div className="overflow-auto p-6">
+        <div className="overflow-auto p-6 relative">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -81,8 +81,8 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                 width: printSettings.paperSize === 'thermal' ? '80mm' : 'auto',
                 maxWidth: printSettings.paperSize === 'thermal' ? '80mm' : '4xl',
                 margin: '0 auto',
-                fontSize: printSettings.paperSize === 'thermal' ? '12px' : '14px',
-                lineHeight: printSettings.paperSize === 'thermal' ? '1.2' : '1.5',
+                fontSize: printSettings.paperSize === 'thermal' ? '18px' : '14px',
+                lineHeight: printSettings.paperSize === 'thermal' ? '1.3' : '1.5',
                 textAlign: 'center'
               }}
             >
@@ -96,30 +96,30 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                     style={{ height: printSettings.paperSize === 'thermal' ? '40px' : '64px' }}
                   />
                 )}
-                <h1 className="font-bold" style={{ fontSize: printSettings.paperSize === 'thermal' ? '16px' : '20px', margin: '2px 0' }}>{companyInfo.name}</h1>
-                <p className="whitespace-pre-line" style={{ margin: '2px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>{companyInfo.address}</p>
+                <h1 className="font-bold" style={{ fontSize: printSettings.paperSize === 'thermal' ? '24px' : '20px', margin: '2px 0' }}>{companyInfo.name}</h1>
+                <p className="whitespace-pre-line" style={{ margin: '2px 0', fontSize: printSettings.paperSize === 'thermal' ? '15px' : '14px' }}>{companyInfo.address}</p>
                 {printSettings.showTaxId && (
                   <>
-                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>NTN: {companyInfo.ntn}</p>
-                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>STRN: {companyInfo.strn}</p>
-                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>PH: {companyInfo.phone}</p>
-                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>Cell: {companyInfo.cell}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '15px' : '14px' }}>NTN: {companyInfo.ntn}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '15px' : '14px' }}>STRN: {companyInfo.strn}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '15px' : '14px' }}>PH: {companyInfo.phone}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '15px' : '14px' }}>Cell: {companyInfo.cell}</p>
                   </>
                 )}
               </div>
 
               {/* Invoice Details */}
               <div className="mb-3 text-center">
-                <h2 className="font-bold mb-1" style={{ fontSize: printSettings.paperSize === 'thermal' ? '14px' : '18px', margin: '2px 0' }}>INVOICE</h2>
-                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}><span className="font-medium">Invoice #:</span> {sale.invoiceNumber}</p>
-                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}><span className="font-medium">Date:</span> {new Date(sale.saleDate).toLocaleDateString()}</p>
-                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}><span className="font-medium">Time:</span> {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
-                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}><span className="font-medium">Status:</span> {sale.status.charAt(0).toUpperCase() + sale.status.slice(1)}</p>
+                <h2 className="font-bold mb-1" style={{ fontSize: printSettings.paperSize === 'thermal' ? '21px' : '18px', margin: '2px 0' }}>INVOICE</h2>
+                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '16px' : '14px' }}><span className="font-medium">Invoice #:</span> {sale.invoiceNumber}</p>
+                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '16px' : '14px' }}><span className="font-medium">Date:</span> {new Date(sale.saleDate).toLocaleDateString()}</p>
+                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '16px' : '14px' }}><span className="font-medium">Time:</span> {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '16px' : '14px' }}><span className="font-medium">Status:</span> {sale.status.charAt(0).toUpperCase() + sale.status.slice(1)}</p>
               </div>
 
               {/* Customer Information */}
               <div className="mb-3" style={{ borderTop: '1px dashed #000', borderBottom: '1px dashed #000', padding: '2px 0' }}>
-                <table style={{ width: '100%', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}>
+                <table style={{ width: '100%', fontSize: printSettings.paperSize === 'thermal' ? '16px' : '14px' }}>
                   <tbody>
                     <tr>
                       <td style={{ fontWeight: 'bold', padding: '1px 4px 1px 0' }}>Customer:</td>
@@ -149,7 +149,7 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
 
               {/* Invoice Items */}
               <div className="mb-3">
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: printSettings.paperSize === 'thermal' ? '15px' : '14px' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px dashed #000' }}>
                       <th style={{ textAlign: 'left', padding: '2px 1px', fontWeight: 'bold', width: '40%' }}>Item</th>
@@ -174,14 +174,14 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                 </table>
                 {/* Discounts shown separately if needed */}
                 {sale.items.some(item => item.discount > 0) && (
-                  <div style={{ fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px', textAlign: 'right', marginTop: '2px' }}>
+                  <div style={{ fontSize: printSettings.paperSize === 'thermal' ? '14px' : '12px', textAlign: 'right', marginTop: '2px' }}>
                     * Items with applied discounts
                   </div>
                 )}
               </div>
 
               {/* Invoice Summary */}
-              <div className="mb-3" style={{ borderTop: '1px dashed #000', paddingTop: '2px', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}>
+              <div className="mb-3" style={{ borderTop: '1px dashed #000', paddingTop: '2px', fontSize: printSettings.paperSize === 'thermal' ? '16px' : '14px' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <tbody>
                     <tr>
@@ -213,32 +213,32 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
               {/* Removed payment information and signatures as requested */}
 
               {/* Footer */}
-              <div className="text-center" style={{ fontSize: printSettings.paperSize === 'thermal' ? '10px' : '12px', marginTop: '10px' }}>
+              <div className="text-center" style={{ fontSize: printSettings.paperSize === 'thermal' ? '15px' : '12px', marginTop: '10px' }}>
                 {printSettings.footerText && (
                   <p className="whitespace-pre-line">{printSettings.footerText}</p>
                 )}
               </div>
-              
-              {/* Print Buttons */}
-              <div className="flex justify-center space-x-2 mt-4 print:hidden">
-                <Button 
-                  variant="success"
-                  icon={Printer}
-                  onClick={() => {
-                    console.log('Direct print button clicked');
-                    if (!isLoading && invoiceRef.current) {
-                      directPrint(invoiceRef, `Invoice-${sale.invoiceNumber}`);
-                    }
-                  }}
-                  disabled={isLoading}
-                  className="text-sm"
-                >
-                  Direct Print
-                </Button>
-                <Button variant="secondary" onClick={onClose} className="text-sm">Close</Button>
-              </div>
             </div>
           )}
+          
+          {/* Print Buttons - Positioned outside the invoice content as shown in the picture */}
+          <div className="flex space-x-2 print:hidden print-hidden absolute" style={{ bottom: '500px', right: '20px' }}>
+            <Button 
+              variant="success"
+              icon={Printer}
+              onClick={() => {
+                console.log('Direct print button clicked');
+                if (!isLoading && invoiceRef.current) {
+                  directPrint(invoiceRef, `Invoice-${sale.invoiceNumber}`);
+                }
+              }}
+              disabled={isLoading}
+              className="text-sm"
+            >
+               Print
+            </Button>
+            <Button variant="secondary" onClick={onClose} className="text-sm">Close</Button>
+          </div>
         </div>
       </div>
     </div>
