@@ -149,12 +149,13 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
                 width: printSettings.paperSize === 'thermal' ? '80mm' : 'auto',
                 maxWidth: printSettings.paperSize === 'thermal' ? '80mm' : 'auto',
                 margin: '0 auto',
-                fontSize: printSettings.paperSize === 'thermal' ? '10px' : '12px',
-                lineHeight: printSettings.paperSize === 'thermal' ? '1.2' : '1.5'
+                fontSize: printSettings.paperSize === 'thermal' ? '12px' : '14px',
+                lineHeight: printSettings.paperSize === 'thermal' ? '1.2' : '1.5',
+                textAlign: 'center'
               }}
             >
               {/* Invoice Header */}
-              <div className="text-center mb-4" style={{ fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px' }}>
+              <div className="text-center mb-4">
                 {printSettings.showLogo && companyInfo.logo && (
                   <img
                     src={companyInfo.logo}
@@ -163,84 +164,98 @@ const OldBatteryPrint: React.FC<OldBatteryPrintProps> = ({
                     style={{ height: printSettings.paperSize === 'thermal' ? '40px' : '64px' }}
                   />
                 )}
-                <h1 className="font-bold" style={{ fontSize: printSettings.paperSize === 'thermal' ? '12px' : '18px', margin: '2px 0' }}>{companyInfo.name}</h1>
-                <p className="whitespace-pre-line" style={{ margin: '2px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>{companyInfo.address}</p>
+                <h1 className="font-bold" style={{ fontSize: printSettings.paperSize === 'thermal' ? '16px' : '20px', margin: '2px 0' }}>{companyInfo.name}</h1>
+                <p className="whitespace-pre-line" style={{ margin: '2px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>{companyInfo.address}</p>
                 {printSettings.showTaxId && (
                   <>
-                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>NTN: {companyInfo.ntn}</p>
-                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>STRN: {companyInfo.strn}</p>
-                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>PH: {companyInfo.phone}</p>
-                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>Cell: {companyInfo.cell}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>NTN: {companyInfo.ntn}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>STRN: {companyInfo.strn}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>PH: {companyInfo.phone}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>Cell: {companyInfo.cell}</p>
                   </>
                 )}
               </div>
 
               {/* Invoice Details */}
-              <div className="mb-3 text-center" style={{ fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px' }}>
-                <h2 className="font-bold mb-1" style={{ fontSize: printSettings.paperSize === 'thermal' ? '11px' : '16px', margin: '2px 0' }}>OLD BATTERY RECEIPT</h2>
-                <p style={{ margin: '1px 0' }}><span className="font-medium">Invoice #:</span> {oldBattery.invoiceNumber}</p>
-                <p style={{ margin: '1px 0' }}><span className="font-medium">Date:</span> {new Date(oldBattery.saleDate).toLocaleDateString()}</p>
-                <p style={{ margin: '1px 0' }}><span className="font-medium">Time:</span> {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+              <div className="mb-3 text-center">
+                <h2 className="font-bold mb-1" style={{ fontSize: printSettings.paperSize === 'thermal' ? '14px' : '18px', margin: '2px 0' }}>OLD BATTERY RECEIPT</h2>
+                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}><span className="font-medium">Invoice #:</span> {oldBattery.invoiceNumber}</p>
+                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}><span className="font-medium">Date:</span> {new Date(oldBattery.saleDate).toLocaleDateString()}</p>
+                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}><span className="font-medium">Time:</span> {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
               </div>
 
               {/* Customer Information */}
-              <div className="mb-3" style={{ borderTop: '1px dashed #000', borderBottom: '1px dashed #000', padding: '2px 0', fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px' }}>
-                <p style={{ margin: '1px 0' }}><span className="font-medium">Customer:</span> {oldBattery.customerName || 'Walk-in Customer'}</p>
-                {oldBattery.salesperson && (
-                  <p style={{ margin: '1px 0' }}><span className="font-medium">Salesperson:</span> {oldBattery.salesperson}</p>
-                )}
+              <div className="mb-3" style={{ borderTop: '1px dashed #000', borderBottom: '1px dashed #000', padding: '2px 0' }}>
+                <table style={{ width: '100%', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ fontWeight: 'bold', padding: '1px 4px 1px 0' }}>Customer:</td>
+                      <td>{oldBattery.customerName || 'Walk-in Customer'}</td>
+                    </tr>
+                    {oldBattery.salesperson && (
+                      <tr>
+                        <td style={{ fontWeight: 'bold', padding: '1px 4px 1px 0' }}>Salesperson:</td>
+                        <td>{oldBattery.salesperson}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
 
               {/* Old Battery Details */}
               <div className="mb-4">
-                <table className="w-full" style={{ fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px', borderCollapse: 'collapse' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>
                   <thead>
-                    <tr className="border-b" style={{ borderBottom: '1px dashed #000' }}>
-                      <th className="py-1 text-left" style={{ padding: '2px 1px' }}>Description</th>
-                      <th className="py-1 text-right" style={{ padding: '2px 1px' }}>Weight</th>
-                      <th className="py-1 text-right" style={{ padding: '2px 1px' }}>Rate</th>
-                      <th className="py-1 text-right" style={{ padding: '2px 1px' }}>Amount</th>
+                    <tr style={{ borderBottom: '1px dashed #000' }}>
+                      <th style={{ textAlign: 'left', padding: '2px 1px', fontWeight: 'bold' }}>Description</th>
+                      <th style={{ textAlign: 'center', padding: '2px 1px', fontWeight: 'bold' }}>Weight</th>
+                      <th style={{ textAlign: 'center', padding: '2px 1px', fontWeight: 'bold' }}>Rate</th>
+                      <th style={{ textAlign: 'center', padding: '2px 1px', fontWeight: 'bold' }}>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b" style={{ borderBottom: '1px dashed #000' }}>
-                      <td className="py-1" style={{ padding: '2px 1px' }}>{oldBattery.name}</td>
-                      <td className="py-1 text-right" style={{ padding: '2px 1px' }}>{oldBattery.weight}</td>
-                      <td className="py-1 text-right" style={{ padding: '2px 1px' }}>₨{oldBattery.ratePerKg}</td>
-                      <td className="py-1 text-right" style={{ padding: '2px 1px' }}>₨{oldBattery.deductionAmount.toFixed(2)}</td>
+                    <tr style={{ borderBottom: '1px dashed #000' }}>
+                      <td style={{ textAlign: 'left', padding: '2px 1px' }}>{oldBattery.name}</td>
+                      <td style={{ textAlign: 'center', padding: '2px 1px' }}>{oldBattery.weight}</td>
+                      <td style={{ textAlign: 'center', padding: '2px 1px' }}>₨{oldBattery.ratePerKg}</td>
+                      <td style={{ textAlign: 'center', padding: '2px 1px' }}>₨{oldBattery.deductionAmount.toFixed(2)}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
               {/* Invoice Summary */}
-              <div className="mb-4" style={{ fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px' }}>
-                <div className="flex justify-between py-1" style={{ padding: '2px 0' }}>
-                  <span className="font-medium">Subtotal:</span>
-                  <span>₨{oldBattery.deductionAmount.toFixed(2)}</span>
-                </div>
-                {oldBattery.discount > 0 && (
-                  <div className="flex justify-between py-1" style={{ padding: '2px 0' }}>
-                    <span className="font-medium">Discount:</span>
-                    <span>₨{oldBattery.discount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between py-1 font-bold" style={{ padding: '2px 0', borderTop: '1px dashed #000' }}>
-                  <span>Net Amount:</span>
-                  <span>₨{netAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between py-1" style={{ padding: '2px 0' }}>
-                  <span className="font-medium">Amount Paid:</span>
-                  <span>₨{(oldBattery.amountPaid || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between py-1 font-bold" style={{ padding: '2px 0', borderTop: '1px dashed #000', borderBottom: '1px dashed #000' }}>
-                  <span>Remaining Balance:</span>
-                  <span>₨{remainingBalance.toFixed(2)}</span>
-                </div>
+              <div className="mb-4" style={{ fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'left' }}>Subtotal:</td>
+                      <td style={{ padding: '2px 0', textAlign: 'right' }}>₨{oldBattery.deductionAmount.toFixed(2)}</td>
+                    </tr>
+                    {oldBattery.discount > 0 && (
+                      <tr>
+                        <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'left' }}>Discount:</td>
+                        <td style={{ padding: '2px 0', textAlign: 'right' }}>₨{oldBattery.discount.toFixed(2)}</td>
+                      </tr>
+                    )}
+                    <tr style={{ borderTop: '1px dotted #000' }}>
+                      <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'left' }}>Net Amount:</td>
+                      <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'right' }}>₨{netAmount.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'left' }}>Amount Paid:</td>
+                      <td style={{ padding: '2px 0', textAlign: 'right' }}>₨{(oldBattery.amountPaid || 0).toFixed(2)}</td>
+                    </tr>
+                    <tr style={{ borderTop: '1px dashed #000', borderBottom: '1px dashed #000' }}>
+                      <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'left' }}>Remaining Balance:</td>
+                      <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'right' }}>₨{remainingBalance.toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
               {/* Footer */}
-              <div className="text-center mt-3" style={{ fontSize: printSettings.paperSize === 'thermal' ? '8px' : '10px' }}>
+              <div className="text-center mt-3" style={{ fontSize: printSettings.paperSize === 'thermal' ? '10px' : '12px' }}>
                 {printSettings.footerText && (
                   <p className="whitespace-pre-line">{printSettings.footerText}</p>
                 )}

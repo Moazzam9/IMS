@@ -179,12 +179,13 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                 width: printSettings.paperSize === 'thermal' ? '80mm' : 'auto',
                 maxWidth: printSettings.paperSize === 'thermal' ? '80mm' : '4xl',
                 margin: '0 auto',
-                fontSize: printSettings.paperSize === 'thermal' ? '10px' : '12px',
-                lineHeight: printSettings.paperSize === 'thermal' ? '1.2' : '1.5'
+                fontSize: printSettings.paperSize === 'thermal' ? '12px' : '14px',
+                lineHeight: printSettings.paperSize === 'thermal' ? '1.2' : '1.5',
+                textAlign: 'center'
               }}
             >
               {/* Invoice Header */}
-              <div className="text-center mb-4" style={{ fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px' }}>
+              <div className="text-center mb-4">
                 {printSettings.showLogo && companyInfo.logo && (
                   <img
                     src={companyInfo.logo}
@@ -193,99 +194,124 @@ const InvoicePrint: React.FC<InvoicePrintProps> = ({
                     style={{ height: printSettings.paperSize === 'thermal' ? '40px' : '64px' }}
                   />
                 )}
-                <h1 className="font-bold" style={{ fontSize: printSettings.paperSize === 'thermal' ? '12px' : '18px', margin: '2px 0' }}>{companyInfo.name}</h1>
-                <p className="whitespace-pre-line" style={{ margin: '2px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>{companyInfo.address}</p>
+                <h1 className="font-bold" style={{ fontSize: printSettings.paperSize === 'thermal' ? '16px' : '20px', margin: '2px 0' }}>{companyInfo.name}</h1>
+                <p className="whitespace-pre-line" style={{ margin: '2px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>{companyInfo.address}</p>
                 {printSettings.showTaxId && (
                   <>
-                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>NTN: {companyInfo.ntn}</p>
-                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>STRN: {companyInfo.strn}</p>
-                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>PH: {companyInfo.phone}</p>
-                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>Cell: {companyInfo.cell}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>NTN: {companyInfo.ntn}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>STRN: {companyInfo.strn}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>PH: {companyInfo.phone}</p>
+                    <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>Cell: {companyInfo.cell}</p>
                   </>
                 )}
               </div>
 
               {/* Invoice Details */}
-              <div className="mb-3 text-center" style={{ fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px' }}>
-                <h2 className="font-bold mb-1" style={{ fontSize: printSettings.paperSize === 'thermal' ? '11px' : '16px', margin: '2px 0' }}>INVOICE</h2>
-                <p style={{ margin: '1px 0' }}><span className="font-medium">Invoice #:</span> {sale.invoiceNumber}</p>
-                <p style={{ margin: '1px 0' }}><span className="font-medium">Date:</span> {new Date(sale.saleDate).toLocaleDateString()}</p>
-                <p style={{ margin: '1px 0' }}><span className="font-medium">Time:</span> {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
-                <p style={{ margin: '1px 0' }}><span className="font-medium">Status:</span> {sale.status.charAt(0).toUpperCase() + sale.status.slice(1)}</p>
+              <div className="mb-3 text-center">
+                <h2 className="font-bold mb-1" style={{ fontSize: printSettings.paperSize === 'thermal' ? '14px' : '18px', margin: '2px 0' }}>INVOICE</h2>
+                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}><span className="font-medium">Invoice #:</span> {sale.invoiceNumber}</p>
+                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}><span className="font-medium">Date:</span> {new Date(sale.saleDate).toLocaleDateString()}</p>
+                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}><span className="font-medium">Time:</span> {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+                <p style={{ margin: '1px 0', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}><span className="font-medium">Status:</span> {sale.status.charAt(0).toUpperCase() + sale.status.slice(1)}</p>
               </div>
 
               {/* Customer Information */}
-              <div className="mb-3" style={{ borderTop: '1px dashed #000', borderBottom: '1px dashed #000', padding: '2px 0', fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px' }}>
-                <p style={{ margin: '1px 0' }}><span className="font-medium">Customer:</span> {sale.customerName || customer?.name || 'Walk-in Customer'}</p>
-                {customer?.address && (
-                  <p style={{ margin: '1px 0' }}><span className="font-medium">Address:</span> {customer.address}</p>
-                )}
-                {customer?.phone && (
-                  <p style={{ margin: '1px 0' }}><span className="font-medium">Phone:</span> {customer.phone}</p>
-                )}
-                {sale.salesperson && (
-                  <p style={{ margin: '1px 0' }}><span className="font-medium">Salesperson:</span> {sale.salesperson}</p>
-                )}
+              <div className="mb-3" style={{ borderTop: '1px dashed #000', borderBottom: '1px dashed #000', padding: '2px 0' }}>
+                <table style={{ width: '100%', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ fontWeight: 'bold', padding: '1px 4px 1px 0' }}>Customer:</td>
+                      <td>{sale.customerName || customer?.name || 'Walk-in Customer'}</td>
+                    </tr>
+                    {customer?.address && (
+                      <tr>
+                        <td style={{ fontWeight: 'bold', padding: '1px 4px 1px 0' }}>Address:</td>
+                        <td>{customer.address}</td>
+                      </tr>
+                    )}
+                    {customer?.phone && (
+                      <tr>
+                        <td style={{ fontWeight: 'bold', padding: '1px 4px 1px 0' }}>Phone:</td>
+                        <td>{customer.phone}</td>
+                      </tr>
+                    )}
+                    {sale.salesperson && (
+                      <tr>
+                        <td style={{ fontWeight: 'bold', padding: '1px 4px 1px 0' }}>Salesperson:</td>
+                        <td>{sale.salesperson}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
 
               {/* Invoice Items */}
-              <div className="mb-3" style={{ fontSize: printSettings.paperSize === 'thermal' ? '8px' : '12px' }}>
-                <div style={{ borderBottom: '1px dashed #000', marginBottom: '2px', paddingBottom: '2px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ width: '40%', fontWeight: 'bold' }}>Item</span>
-                  <span style={{ width: '15%', textAlign: 'center', fontWeight: 'bold' }}>Qty</span>
-                  <span style={{ width: '20%', textAlign: 'right', fontWeight: 'bold' }}>Price</span>
-                  <span style={{ width: '25%', textAlign: 'right', fontWeight: 'bold' }}>Total</span>
-                </div>
-                {sale.items.map((item, index) => {
-                  const product = getProductDetails(item);
-                  return (
-                    <div key={index} style={{ marginBottom: '2px', paddingBottom: '2px', borderBottom: index === sale.items.length - 1 ? 'none' : '1px dotted #ccc' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ width: '40%' }}>{product?.name || 'Unknown Product'}</span>
-                        <span style={{ width: '15%', textAlign: 'center' }}>{item.quantity} {product?.unit || ''}</span>
-                        <span style={{ width: '20%', textAlign: 'right' }}>₨{item.salePrice.toFixed(2)}</span>
-                        <span style={{ width: '25%', textAlign: 'right' }}>₨{item.total.toFixed(2)}</span>
-                      </div>
-                      {(item.discount > 0) && (
-                        <div style={{ fontSize: printSettings.paperSize === 'thermal' ? '7px' : '10px', textAlign: 'right' }}>
-                          Discount: ₨{(item.discount || 0).toFixed(2)}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="mb-3">
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: printSettings.paperSize === 'thermal' ? '10px' : '14px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px dashed #000' }}>
+                      <th style={{ textAlign: 'left', padding: '2px 1px', fontWeight: 'bold', width: '40%' }}>Item</th>
+                      <th style={{ textAlign: 'center', padding: '2px 1px', fontWeight: 'bold', width: '15%' }}>Qty</th>
+                      <th style={{ textAlign: 'center', padding: '2px 1px', fontWeight: 'bold', width: '20%' }}>Price</th>
+                      <th style={{ textAlign: 'center', padding: '2px 1px', fontWeight: 'bold', width: '25%' }}>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sale.items.map((item, index) => {
+                      const product = getProductDetails(item);
+                      return (
+                        <tr key={index} style={{ borderBottom: index === sale.items.length - 1 ? 'none' : '1px dotted #ccc' }}>
+                          <td style={{ textAlign: 'left', padding: '2px 1px' }}>{product?.name || 'Unknown Product'}</td>
+                          <td style={{ textAlign: 'center', padding: '2px 1px' }}>{item.quantity} {product?.unit || ''}</td>
+                          <td style={{ textAlign: 'center', padding: '2px 1px' }}>₨{item.salePrice.toFixed(2)}</td>
+                          <td style={{ textAlign: 'center', padding: '2px 1px' }}>₨{item.total.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {/* Discounts shown separately if needed */}
+                {sale.items.some(item => item.discount > 0) && (
+                  <div style={{ fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px', textAlign: 'right', marginTop: '2px' }}>
+                    * Items with applied discounts
+                  </div>
+                )}
               </div>
 
               {/* Invoice Summary */}
-              <div className="mb-3" style={{ borderTop: '1px dashed #000', paddingTop: '2px', fontSize: printSettings.paperSize === 'thermal' ? '9px' : '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}>
-                  <span className="font-medium">Subtotal:</span>
-                  <span>₨{sale.totalAmount.toFixed(2)}</span>
-                </div>
-                {sale.discount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}>
-                    <span className="font-medium">Discount:</span>
-                    <span>₨{sale.discount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0', fontWeight: 'bold', borderTop: '1px dotted #000', borderBottom: '1px dotted #000', padding: '2px 0' }}>
-                  <span>Total:</span>
-                  <span>₨{(sale.netAmount || sale.totalAmount).toFixed(2)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}>
-                  <span className="font-medium">Amount Paid:</span>
-                  <span>₨{(sale.amountPaid || 0).toFixed(2)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1px 0' }}>
-                  <span className="font-medium">Remaining Balance:</span>
-                  <span style={{ color: (sale.remainingBalance || 0) > 0 ? '#dc2626' : 'inherit', fontWeight: (sale.remainingBalance || 0) > 0 ? 'bold' : 'normal' }}>₨{(sale.remainingBalance || 0).toFixed(2)}</span>
-                </div>
+              <div className="mb-3" style={{ borderTop: '1px dashed #000', paddingTop: '2px', fontSize: printSettings.paperSize === 'thermal' ? '11px' : '14px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'left' }}>Subtotal:</td>
+                      <td style={{ padding: '2px 0', textAlign: 'right' }}>₨{sale.totalAmount.toFixed(2)}</td>
+                    </tr>
+                    {sale.discount > 0 && (
+                      <tr>
+                        <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'left' }}>Discount:</td>
+                        <td style={{ padding: '2px 0', textAlign: 'right' }}>₨{sale.discount.toFixed(2)}</td>
+                      </tr>
+                    )}
+                    <tr style={{ borderTop: '1px dotted #000', borderBottom: '1px dotted #000' }}>
+                      <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'left' }}>Total:</td>
+                      <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'right' }}>₨{(sale.netAmount || sale.totalAmount).toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'left' }}>Amount Paid:</td>
+                      <td style={{ padding: '2px 0', textAlign: 'right' }}>₨{(sale.amountPaid || 0).toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ fontWeight: 'bold', padding: '2px 0', textAlign: 'left' }}>Remaining Balance:</td>
+                      <td style={{ padding: '2px 0', textAlign: 'right', color: (sale.remainingBalance || 0) > 0 ? '#dc2626' : 'inherit', fontWeight: (sale.remainingBalance || 0) > 0 ? 'bold' : 'normal' }}>₨{(sale.remainingBalance || 0).toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
               {/* Removed payment information and signatures as requested */}
 
               {/* Footer */}
-              <div className="text-center" style={{ fontSize: printSettings.paperSize === 'thermal' ? '8px' : '10px', marginTop: '10px' }}>
+              <div className="text-center" style={{ fontSize: printSettings.paperSize === 'thermal' ? '10px' : '12px', marginTop: '10px' }}>
                 {printSettings.footerText && (
                   <p className="whitespace-pre-line">{printSettings.footerText}</p>
                 )}
